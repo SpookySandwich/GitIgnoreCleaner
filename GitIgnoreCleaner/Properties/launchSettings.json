@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "GitIgnoreCleaner (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "GitIgnoreCleaner (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
