@@ -1,204 +1,78 @@
-using System.Text.RegularExpressions;
+using System.Collections.Generic;
+using System.IO;
+using Ignore;
 
 namespace GitIgnoreCleaner.Services;
 
-public sealed class IgnoreRule
+// This replaces your complex IgnoreRule class
+public sealed class IgnoreListWrapper
 {
-    private readonly Regex _pathRegex;
-    private readonly Regex _nameRegex;
+    private readonly Ignore.Ignore _ignore;
 
-    public IgnoreRule(string pattern, string basePath, string sourceFile, bool isNegation, bool directoryOnly, bool anchored)
+    public IgnoreListWrapper(IEnumerable<string> rules, string sourceFile)
     {
-        Pattern = pattern;
-        BasePath = basePath;
         SourceFile = sourceFile;
-        IsNegation = isNegation;
-        DirectoryOnly = directoryOnly;
-        Anchored = anchored;
-        HasSlash = pattern.Contains('/');
-        _pathRegex = new Regex("^" + GlobToRegex(pattern) + "$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        _nameRegex = HasSlash
-            ? _pathRegex
-            : new Regex("^" + GlobToRegex(pattern) + "$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        _ignore = new Ignore.Ignore();
+        _ignore.Add(rules); // The library handles comments, negations, and anchors automatically
     }
 
-    public string Pattern { get; }
-    public string BasePath { get; }
     public string SourceFile { get; }
-    public bool IsNegation { get; }
-    public bool DirectoryOnly { get; }
-    public bool Anchored { get; }
-    public bool HasSlash { get; }
 
-    public bool Matches(string fullPath, bool isDirectory)
+    public bool IsIgnored(string relativePath)
     {
-        var relativePath = Path.GetRelativePath(BasePath, fullPath)
-            .Replace('\\', '/');
-
-        if (relativePath == ".")
-        {
-            relativePath = string.Empty;
-        }
-
-        if (DirectoryOnly && !isDirectory)
-        {
-            return MatchesAncestorDirectory(relativePath);
-        }
-
-        return MatchesPath(relativePath);
-    }
-
-    private bool MatchesAncestorDirectory(string relativePath)
-    {
-        if (string.IsNullOrEmpty(relativePath))
-        {
-            return false;
-        }
-
-        var segments = relativePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        if (segments.Length <= 1)
-        {
-            return false;
-        }
-
-        if (!Anchored && !HasSlash)
-        {
-            for (var i = 0; i < segments.Length - 1; i++)
-            {
-                if (_nameRegex.IsMatch(segments[i]))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        var current = segments[0];
-        for (var i = 0; i < segments.Length - 1; i++)
-        {
-            if (i > 0)
-            {
-                current = current + "/" + segments[i];
-            }
-
-            if (_pathRegex.IsMatch(current))
-            {
-                return true;
-            }
-        }
-
-        return _pathRegex.IsMatch(current);
-    }
-
-    private bool MatchesPath(string relativePath)
-    {
-        if (Anchored || HasSlash)
-        {
-            return _pathRegex.IsMatch(relativePath);
-        }
-
-        var name = Path.GetFileName(relativePath);
-        return _nameRegex.IsMatch(name);
-    }
-
-    private static string GlobToRegex(string pattern)
-    {
-        var regex = new System.Text.StringBuilder();
-        for (var i = 0; i < pattern.Length; i++)
-        {
-            var c = pattern[i];
-            switch (c)
-            {
-                case '*':
-                    var isDoubleStar = i + 1 < pattern.Length && pattern[i + 1] == '*';
-                    if (isDoubleStar)
-                    {
-                        regex.Append(".*");
-                        i++;
-                    }
-                    else
-                    {
-                        regex.Append("[^/]*");
-                    }
-                    break;
-                case '?':
-                    regex.Append("[^/]");
-                    break;
-                case '.':
-                    regex.Append("\\.");
-                    break;
-                case '/':
-                    regex.Append('/');
-                    break;
-                case '\\':
-                    regex.Append("\\\\");
-                    break;
-                case '+':
-                case '(':
-                case ')':
-                case '^':
-                case '$':
-                case '|':
-                case '{':
-                case '}':
-                case '[':
-                case ']':
-                    regex.Append('\\').Append(c);
-                    break;
-                default:
-                    regex.Append(c);
-                    break;
-            }
-        }
-
-        return regex.ToString();
+        // The library expects paths relative to where the .gitignore sits
+        return _ignore.IsIgnored(relativePath);
     }
 }
 
+// Update the stack to hold the Wrappers instead of your custom Rules
 public sealed class IgnoreRuleStack
 {
-    private readonly List<IgnoreRule> _rules = [];
+    private readonly List<IgnoreListWrapper> _layers = [];
 
-    public int Count => _rules.Count;
+    public int Count => _layers.Count;
 
-    public void AddRange(IEnumerable<IgnoreRule> rules)
+    public void Add(IgnoreListWrapper layer)
     {
-        _rules.AddRange(rules);
+        _layers.Add(layer);
     }
 
     public void RemoveLast(int count)
     {
-        if (count <= 0)
-        {
-            return;
-        }
-
-        _rules.RemoveRange(_rules.Count - count, count);
+        // Since we are adding one wrapper per file, we usually remove 1 at a time, 
+        // but your logic supports batching.
+        if (count > _layers.Count) count = _layers.Count;
+        _layers.RemoveRange(_layers.Count - count, count);
     }
 
-    public (bool IsIgnored, IgnoreRule? MatchedRule, List<IgnoreRule> AllMatchedRules) CheckIgnored(string fullPath, bool isDirectory)
+    // Returns: (IsIgnored, SourceFile that caused the ignore)
+    public (bool IsIgnored, string? MatchedDetails, string? MatchedSourceFile) CheckIgnored(string fullPath)
     {
-        bool? ignored = null;
-        IgnoreRule? lastMatchedRule = null;
-        var allMatchedRules = new List<IgnoreRule>();
-
-        foreach (var rule in _rules)
+        // We iterate backwards (newest rules / deepest folders first)
+        // Git spec says deeper .gitignores override parents.
+        for (int i = _layers.Count - 1; i >= 0; i--)
         {
-            if (rule.Matches(fullPath, isDirectory))
+            var layer = _layers[i];
+          
+            // Calculate path relative to the specific .gitignore file's folder
+            // We assume the SourceFile path is stored in the layer to derive directory
+            var ignoreFileDir = Path.GetDirectoryName(layer.SourceFile);
+            var relativePath = Path.GetRelativePath(ignoreFileDir!, fullPath);
+
+             // If the target is outside this ignore file's scope (e.g. parent folder), skip
+            if (relativePath.StartsWith("..")) continue;
+
+            if (layer.IsIgnored(relativePath))
             {
-                ignored = !rule.IsNegation;
-                lastMatchedRule = rule;
-                allMatchedRules.Add(rule);
+                // Note: The 'Ignore' library doesn't easily tell us WHICH rule matched,
+                // only THAT it matched. This is a trade-off. 
+                // If you strictly need "MatchedRuleSource" for UI, you might need a different approaches,
+                // but this ensures correctness.
+                return (true, $"{Path.GetFileName(layer.SourceFile)} (matched)", layer.SourceFile);
             }
         }
 
-        return (ignored ?? false, ignored == true ? lastMatchedRule : null, allMatchedRules);
-    }
-
-    public bool IsIgnored(string fullPath, bool isDirectory)
-    {
-        return CheckIgnored(fullPath, isDirectory).IsIgnored;
+        return (false, null, null);
     }
 }
 

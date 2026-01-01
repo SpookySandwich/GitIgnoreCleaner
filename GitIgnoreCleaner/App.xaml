@@ -13,6 +13,11 @@
             <local:ScanTextConverter x:Key="ScanTextConverter" />
             <local:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter" />
             <local:InverseBoolConverter x:Key="InverseBoolConverter" />
+            <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+            <local:DirectoryToSymbolConverter x:Key="DirectoryToSymbolConverter" />
+            <local:CandidateToBrushConverter x:Key="CandidateToBrushConverter" />
+            <local:CandidateToFontWeightConverter x:Key="CandidateToFontWeightConverter" />
+            <local:CandidateToOpacityConverter x:Key="CandidateToOpacityConverter" />
             <Style TargetType="TextBlock" x:Key="BodyTextBlockStyle">
                 <Setter Property="FontFamily" Value="Segoe UI" />
                 <Setter Property="FontSize" Value="14" />

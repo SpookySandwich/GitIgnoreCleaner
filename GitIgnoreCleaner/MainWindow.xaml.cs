@@ -92,6 +92,8 @@ public sealed partial class MainWindow : Window
             Grid.SetColumn(PermanentlyDeleteCheckBox, 0);
             Grid.SetColumnSpan(PermanentlyDeleteCheckBox, 4);
             PermanentlyDeleteCheckBox.Margin = new Thickness(0, 12, 0, 0);
+
+            MainScrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
         }
         else
         {
@@ -115,6 +117,8 @@ public sealed partial class MainWindow : Window
             Grid.SetColumn(PermanentlyDeleteCheckBox, 3);
             Grid.SetColumnSpan(PermanentlyDeleteCheckBox, 1);
             PermanentlyDeleteCheckBox.Margin = new Thickness(0);
+
+            MainScrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
         }
     }
 
@@ -185,7 +189,12 @@ public sealed partial class MainWindow : Window
             _viewModel.SummaryText = result.RootNode == null
                 ? "No ignored files or directories were found."
                 : $"{result.CandidateCount} items matched, {StringHelper.FormatBytes(result.TotalBytes)} total size.";
-            _viewModel.ErrorSummary = BuildErrorSummary(result.Errors);
+            
+            _viewModel.ErrorsList = result.Errors.ToList();
+            _viewModel.ErrorSummary = result.Errors.Count > 0
+                ? $"Found {result.Errors.Count} warnings during scan."
+                : string.Empty;
+
             _viewModel.StatusMessage = "Scan completed.";
 
             if (result.RootNode != null)
@@ -277,7 +286,11 @@ public sealed partial class MainWindow : Window
             _viewModel.StatusMessage = deleteResult.Errors.Count == 0
                 ? "Deletion completed."
                 : "Deletion completed with warnings.";
-            _viewModel.ErrorSummary = BuildErrorSummary(deleteResult.Errors);
+            
+            _viewModel.ErrorsList = deleteResult.Errors.ToList();
+            _viewModel.ErrorSummary = deleteResult.Errors.Count > 0
+                ? $"Deletion completed with {deleteResult.Errors.Count} warnings."
+                : string.Empty;
         }
         finally
         {
@@ -295,6 +308,16 @@ public sealed partial class MainWindow : Window
             _viewModel.StatusMessage = "Canceling...";
         }
         _viewModel.ClearResults();
+    }
+
+    private void ViewErrors_Click(object sender, RoutedEventArgs e)
+    {
+        _viewModel.IsErrorPaneOpen = true;
+    }
+
+    private void CloseErrorPane_Click(object sender, RoutedEventArgs e)
+    {
+        _viewModel.IsErrorPaneOpen = false;
     }
 
     private async Task ShowMessageAsync(string message)

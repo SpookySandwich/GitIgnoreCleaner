@@ -98,9 +98,9 @@ public sealed class ScanService
 
         var addedRuleCount = LoadIgnoreRules(directoryPath, rules, result, ignoreFileNames);
 
-        var (isDirIgnored, dirMatchedRule, dirAllRules) = !isRoot
-            ? rules.CheckIgnored(directoryPath, isDirectory: true)
-            : (false, null, new List<IgnoreRule>());
+        var (isDirIgnored, dirMatchedDetails, dirMatchedSource) = !isRoot
+            ? rules.CheckIgnored(directoryPath)
+            : (false, null, null);
 
         var containsUnignored = isRoot ? false : !isDirIgnored;
 
@@ -117,8 +117,8 @@ public sealed class ScanService
             else
             {
                 var displayName = Path.GetFileName(directoryPath);
-                var dirSource = dirMatchedRule != null ? $"{Path.GetFileName(dirMatchedRule.SourceFile)}: {dirMatchedRule.Pattern}" : string.Empty;
-                var dirRulePaths = dirAllRules.Select(r => r.SourceFile).Distinct().ToList();
+                var dirSource = dirMatchedDetails ?? string.Empty;
+                var dirRulePaths = dirMatchedSource != null ? [dirMatchedSource] : new List<string>();
 
                 myNode = new ScanNode(displayName, directoryPath, isDirectory: true, isCandidate: false, matchedRuleSource: dirSource, ignoreRulePaths: dirRulePaths);
 
@@ -192,7 +192,7 @@ public sealed class ScanService
                 continue;
             }
 
-            var (isIgnored, matchedRule, allRules) = rules.CheckIgnored(entry, isDirectory);
+            var (isIgnored, matchedDetails, matchedSource) = rules.CheckIgnored(entry);
             if (!isIgnored)
             {
                 containsUnignored = true;
@@ -206,8 +206,8 @@ public sealed class ScanService
                 catch (Exception ex) { result.Errors.Add($"Failed to read size for {entry}: {ex.Message}"); }
             }
 
-            var source = matchedRule != null ? $"{Path.GetFileName(matchedRule.SourceFile)}: {matchedRule.Pattern}" : string.Empty;
-            var rulePaths = allRules.Select(r => r.SourceFile).Distinct().ToList();
+            var source = matchedDetails ?? string.Empty;
+            var rulePaths = matchedSource != null ? [matchedSource] : new List<string>();
 
             var fileNode = new ScanNode(name, entry, isDirectory, isCandidate: true, sizeBytes: size, matchedRuleSource: source, ignoreRulePaths: rulePaths);
 
@@ -268,9 +268,9 @@ public sealed class ScanService
                 var attributes = File.GetAttributes(ignorePath);
                 if (attributes.HasFlag(FileAttributes.Offline)) continue;
 
-                var fileRules = IgnoreFileParser.ParseFile(ignorePath, directoryPath);
-                rules.AddRange(fileRules);
-                addedRuleCount += fileRules.Count;
+                var layer = IgnoreFileParser.ParseFile(ignorePath);
+                rules.Add(layer);
+                addedRuleCount++;
             }
             catch (Exception ex)
             {
