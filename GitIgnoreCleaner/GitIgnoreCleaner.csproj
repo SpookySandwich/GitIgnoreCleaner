@@ -37,6 +37,7 @@
     <ProjectCapability Include="Msix" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Ignore" Version="0.2.1" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.7175" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.251107005" />
   </ItemGroup>
@@ -59,13 +60,15 @@
 	<PublishTrimmed>False</PublishTrimmed>
 	<GenerateTemporaryStoreCertificate>True</GenerateTemporaryStoreCertificate>
 	<GenerateAppInstallerFile>False</GenerateAppInstallerFile>
-	<AppxPackageSigningEnabled>False</AppxPackageSigningEnabled>
+	<AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
 	<AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
 	<AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
-	<GenerateTestArtifacts>False</GenerateTestArtifacts>
+	<GenerateTestArtifacts>True</GenerateTestArtifacts>
 	<AppxBundle>Always</AppxBundle>
-	<AppxBundlePlatforms>x86|x64|arm64</AppxBundlePlatforms>
+	<AppxBundlePlatforms>x86|x64</AppxBundlePlatforms>
 	<HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
 	<AppxSymbolPackageEnabled>True</AppxSymbolPackageEnabled>
+	<AppxPackageDir>D:\GitIgnoreCleaner\GitIgnoreCleaner\\AppPackages\</AppxPackageDir>
+	<PackageCertificateThumbprint>0EA1FF0CED0F5B8BB0571A4893871C0E59588529</PackageCertificateThumbprint>
   </PropertyGroup>
 </Project>

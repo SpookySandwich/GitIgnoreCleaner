@@ -13,6 +13,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private bool _isDeleting;
     private string _summaryText = "Select a root folder and scan to preview deletions.";
     private string _errorSummary = string.Empty;
+    private List<string> _errorsList = [];
+    private bool _isErrorPaneOpen;
     private bool _permanentlyDelete;
     private string _statusMessage = "Ready";
     private bool _showSuccessMessage;
@@ -164,6 +166,36 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
     }
 
+    public List<string> ErrorsList
+    {
+        get => _errorsList;
+        set
+        {
+            if (_errorsList == value)
+            {
+                return;
+            }
+
+            _errorsList = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool IsErrorPaneOpen
+    {
+        get => _isErrorPaneOpen;
+        set
+        {
+            if (_isErrorPaneOpen == value)
+            {
+                return;
+            }
+
+            _isErrorPaneOpen = value;
+            OnPropertyChanged();
+        }
+    }
+
     public bool HasResults => Results.Count > 0;
 
     public bool HasErrors => !string.IsNullOrWhiteSpace(ErrorSummary);
@@ -253,6 +285,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
         Results.Clear();
         SummaryText = "Select a root folder and scan to preview deletions.";
         ErrorSummary = string.Empty;
+        ErrorsList = [];
+        IsErrorPaneOpen = false;
         StatusMessage = "Ready";
         ShowSuccessMessage = false;
         ProgressValue = 0;
