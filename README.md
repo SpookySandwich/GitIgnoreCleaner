@@ -1,8 +1,8 @@
-# GitIgnoreCleaner <img src="assets/icon.png" align="right" width="128" height="128" />
+# GitIgnoreCleaner <img src="assets/icon_web.png" align="right" width="128" height="128" />
 
 GitIgnoreCleaner is a Windows utility built with WinUI 3 that helps you reclaim disk space by finding and deleting files ignored by your version control system.
 
-![GitIgnoreCleaner Screenshot](assets/screenshot.png)
+![GitIgnoreCleaner Screenshot](assets/screenshot_web.jpg)
 
 It scans a directory tree, parses `.gitignore` (and `.ignore`) files found at various levels, and identifies files that match these rules typically build artifacts (`bin/`, `obj/`), temporary files, and logs.
 
