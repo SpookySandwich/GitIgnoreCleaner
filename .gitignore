@@ -190,6 +190,7 @@ publish/
 # but database connection strings (with potential passwords) will be unencrypted
 *.pubxml
 *.publishproj
+!GitIgnoreCleaner/Properties/PublishProfiles/*.pubxml
 
 # Microsoft Azure Web App publish settings. Comment the next line if you want to
 # checkin your Azure Web App publish settings, but sensitive information contained
@@ -221,11 +222,17 @@ rcf/
 # Windows Store app package directories and files
 AppPackages/
 BundleArtifacts/
+.gitignorecleaner-trash/
 Package.StoreAssociation.xml
 _pkginfo.txt
 *.appx
 *.appxbundle
 *.appxupload
+*.appinstaller
+*.cer
+*.msixsym
+*.msixupload
+Add-AppDevPackage*.ps1
 
 # Visual Studio cache files
 # files ending in .cache can be ignored

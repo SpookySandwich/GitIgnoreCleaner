@@ -84,37 +84,46 @@
                                     Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </StackPanel>
 
-                            <Grid RowSpacing="12" ColumnSpacing="12">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
-                                <TextBox
-                                    Grid.Row="0"
-                                    Header="Root folder"
-                                    Text="{Binding RootPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                    PlaceholderText="Choose a folder to scan"
-                                    IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" />
-                                <Button
-                                    Grid.Row="0"
-                                    Grid.Column="1"
-                                    Content="Browse"
-                                    Click="Browse_Click"
-                                    VerticalAlignment="Bottom"
-                                    IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" />
+                            <StackPanel Spacing="16">
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox
+                                        Header="Root folder"
+                                        Text="{Binding RootPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                        PlaceholderText="Choose a folder to scan"
+                                        IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" />
+                                    <Button
+                                        Grid.Column="1"
+                                        Content="Browse"
+                                        Click="Browse_Click"
+                                        VerticalAlignment="Bottom"
+                                        IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" />
+                                </Grid>
 
                                 <TextBox
-                                    Grid.Row="1"
-                                    Grid.ColumnSpan="2"
-                                    Header="Ignore file names (semicolon-separated)"
+                                    Header="Ignore file names"
+                                    Description="Semicolon-separated list (e.g. .gitignore)"
                                     Text="{Binding IgnoreFileNames, Mode=TwoWay}"
                                     PlaceholderText=".gitignore;.ignore"
                                     IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" />
-                            </Grid>
+
+                                <Border BorderThickness="1" BorderBrush="{ThemeResource SurfaceStrokeColorDefaultBrush}" Background="{ThemeResource LayerFillColorDefaultBrush}" CornerRadius="4">
+                                    <Grid Padding="12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Spacing="2">
+                                            <TextBlock Text="Scan exclusions" Style="{ThemeResource BodyTextBlockStyle}" />
+                                            <TextBlock Text="{Binding ExcludedFolderNames}" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Content="Edit" Click="EditExclusions_Click" VerticalAlignment="Center" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" />
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
 
                             <ProgressBar
                                 Height="4"
@@ -140,7 +149,7 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <Button x:Name="ScanButton" Click="Scan_Click" IsEnabled="{Binding CanScan}" Style="{StaticResource AccentButtonStyle}">
+                                    <Button x:Name="ScanButton" Click="Scan_Click" IsEnabled="{Binding CanScanAction}" Style="{StaticResource AccentButtonStyle}">
                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                             <SymbolIcon Symbol="{Binding IsScanning, Converter={StaticResource ScanIconConverter}}" />
                                             <TextBlock Text="{Binding IsScanning, Converter={StaticResource ScanTextConverter}}" />
@@ -189,12 +198,18 @@
 
                             <InfoBar
                                 Grid.Row="1"
-                                Title="Success"
+                                Title="Completed"
                                 Severity="Success"
                                 IsOpen="{Binding ShowSuccessMessage, Mode=TwoWay}"
                                 Message="{Binding SuccessMessage}"
-                                Margin="0,0,0,12"
-                                IsClosable="True" />
+                                Margin="0,0,0,12">
+                                <InfoBar.ActionButton>
+                                    <Button Content="Restore"
+                                            Click="RestoreLastDelete_Click"
+                                            Visibility="{Binding ShowRestoreActionInSuccess, Converter={StaticResource BoolToVisibilityConverter}}"
+                                            IsEnabled="{Binding CanRestoreLastDelete}" />
+                                </InfoBar.ActionButton>
+                            </InfoBar>
 
                             <Border Grid.Row="2"
                                     BorderThickness="1"
@@ -204,7 +219,7 @@
                                     MinWidth="350"
                                     MinHeight="200">
                                 <Grid>
-                                    <TreeView ItemsSource="{Binding Results}" SelectionMode="Single" IsEnabled="{Binding IsDeleting, Converter={StaticResource InverseBoolConverter}}" Padding="0,12">
+                                    <TreeView ItemsSource="{Binding Results}" SelectionMode="Single" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Padding="0,12">
                                         <TreeView.ItemTemplate>
                                             <DataTemplate x:DataType="models:ScanNode">
                                                 <TreeViewItem ItemsSource="{x:Bind Children}">

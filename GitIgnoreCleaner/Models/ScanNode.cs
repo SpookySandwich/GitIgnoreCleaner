@@ -1,7 +1,5 @@
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using GitIgnoreCleaner.Helpers;
 
@@ -19,8 +17,7 @@ public sealed class ScanNode : INotifyPropertyChanged
         bool isCandidate,
         long sizeBytes = 0,
         string matchedRuleSource = "",
-        IEnumerable<string>? ignoreRulePaths = null,
-        ObservableCollection<ScanNode>? children = null)
+        IEnumerable<string>? ignoreRulePaths = null)
     {
         DisplayName = displayName;
         FullPath = fullPath;
@@ -28,18 +25,25 @@ public sealed class ScanNode : INotifyPropertyChanged
         IsCandidate = isCandidate;
         MatchedRuleSource = matchedRuleSource;
         IgnoreRulePaths = ignoreRulePaths?.ToList() ?? [];
-        Children = children ?? [];
+        Children = [];
         _isChecked = true;
-        SizeBytes = sizeBytes;
+        _sizeBytes = sizeBytes;
     }
 
-    public string DisplayName { get; private set; }
-    public string FullPath { get; private set; }
+    public string DisplayName { get; }
+
+    public string FullPath { get; }
+
     public bool IsDirectory { get; }
-    public bool IsCandidate { get; private set; }
-    public string MatchedRuleSource { get; private set; }
-    public List<string> IgnoreRulePaths { get; private set; }
+
+    public bool IsCandidate { get; }
+
+    public string MatchedRuleSource { get; }
+
+    public List<string> IgnoreRulePaths { get; }
+
     public ObservableCollection<ScanNode> Children { get; }
+
     public ScanNode? Parent { get; private set; }
 
     public long SizeBytes
@@ -47,7 +51,11 @@ public sealed class ScanNode : INotifyPropertyChanged
         get => _sizeBytes;
         private set
         {
-            if (_sizeBytes == value) return;
+            if (_sizeBytes == value)
+            {
+                return;
+            }
+
             _sizeBytes = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(SizeText));
@@ -58,84 +66,48 @@ public sealed class ScanNode : INotifyPropertyChanged
 
     public string HintText => !IsCandidate && IsDirectory ? "contains matches" : string.Empty;
 
-    public void SetIsCandidate(bool value)
-    {
-        if (IsCandidate == value) return;
-        IsCandidate = value;
-        OnPropertyChanged(nameof(IsCandidate));
-        OnPropertyChanged(nameof(HintText));
-    }
-
     public bool? IsChecked
     {
         get => _isChecked;
         set
         {
-            if (_isChecked == value) return;
+            if (_isChecked == value)
+            {
+                return;
+            }
 
-            bool targetState = value ?? false;
-
+            var targetState = value ?? false;
             SetInternalState(targetState);
             Parent?.ReflectChildrenState();
         }
     }
 
-    private void SetInternalState(bool isSelected)
+    public static ScanNode FromSnapshot(ScanSnapshotNode snapshot)
     {
-        if (_isChecked == isSelected) return;
+        var initialSize = snapshot.IsDirectory && snapshot.Children.Count > 0
+            ? 0
+            : snapshot.SizeBytes;
 
-        _isChecked = isSelected;
-        OnPropertyChanged(nameof(IsChecked));
+        var node = new ScanNode(
+            snapshot.DisplayName,
+            snapshot.FullPath,
+            snapshot.IsDirectory,
+            snapshot.IsCandidate,
+            initialSize,
+            snapshot.MatchedRuleSource,
+            snapshot.IgnoreRulePaths);
 
-        foreach (var child in Children)
+        foreach (var child in snapshot.Children)
         {
-            child.SetInternalState(isSelected);
-        }
-    }
-
-    private void ReflectChildrenState()
-    {
-        if (Children.Count == 0)
-        {
-            // If the node became empty and is still in the tree, 
-            // ensure we don't leave it in a confused checked state.
-            if (_isChecked != false)
-            {
-                _isChecked = false;
-                OnPropertyChanged(nameof(IsChecked));
-            }
-            return;
+            node.AddChild(FromSnapshot(child));
         }
 
-        bool? newState;
-        bool hasTrue = false;
-        bool hasFalse = false;
-        bool hasNull = false;
-
-        foreach (var child in Children)
+        if (snapshot.IsDirectory && snapshot.Children.Count == 0)
         {
-            var state = child.IsChecked;
-            if (state == true) hasTrue = true;
-            else if (state == false) hasFalse = true;
-            else hasNull = true;
-
-            if ((hasTrue && hasFalse) || hasNull)
-            {
-                newState = null;
-                goto ApplyState;
-            }
+            node.SetSize(snapshot.SizeBytes);
         }
 
-        if (hasTrue) newState = true;
-        else newState = false;
-
-        ApplyState:
-        if (_isChecked != newState)
-        {
-            _isChecked = newState;
-            OnPropertyChanged(nameof(IsChecked));
-            Parent?.ReflectChildrenState();
-        }
+        return node;
     }
 
     public void AddChild(ScanNode child)
@@ -153,50 +125,100 @@ public sealed class ScanNode : INotifyPropertyChanged
 
     public void RemoveChild(ScanNode child)
     {
-        if (Children.Remove(child))
+        if (!Children.Remove(child))
         {
-            child.Parent = null;
+            return;
+        }
 
-            if (child.SizeBytes > 0)
+        child.Parent = null;
+
+        if (child.SizeBytes > 0)
+        {
+            UpdateSizeUpwards(-child.SizeBytes);
+        }
+
+        if (Children.Count == 0 && !IsCandidate && Parent != null)
+        {
+            Parent.RemoveChild(this);
+            return;
+        }
+
+        ReflectChildrenState();
+    }
+
+    private void SetInternalState(bool isSelected)
+    {
+        if (_isChecked == isSelected)
+        {
+            return;
+        }
+
+        _isChecked = isSelected;
+        OnPropertyChanged(nameof(IsChecked));
+
+        foreach (var child in Children)
+        {
+            child.SetInternalState(isSelected);
+        }
+    }
+
+    private void ReflectChildrenState()
+    {
+        if (Children.Count == 0)
+        {
+            if (_isChecked != false)
             {
-                UpdateSizeUpwards(-child.SizeBytes);
+                _isChecked = false;
+                OnPropertyChanged(nameof(IsChecked));
             }
 
-            // If this node is just a container (not an ignore candidate itself)
-            // and it is now empty, it serves no purpose in the UI. 
-            // Remove it from its parent recursively.
-            if (Children.Count == 0 && !IsCandidate && Parent != null)
+            return;
+        }
+
+        bool? newState;
+        var hasTrue = false;
+        var hasFalse = false;
+        var hasNull = false;
+
+        foreach (var child in Children)
+        {
+            var state = child.IsChecked;
+            if (state == true)
             {
-                Parent.RemoveChild(this);
+                hasTrue = true;
+            }
+            else if (state == false)
+            {
+                hasFalse = true;
             }
             else
             {
-                ReflectChildrenState();
+                hasNull = true;
+            }
+
+            if ((hasTrue && hasFalse) || hasNull)
+            {
+                newState = null;
+                goto ApplyState;
             }
         }
-    }
 
-    public void FinalizeFileSize(long size)
-    {
-        if (size <= 0) return;
-        UpdateSizeUpwards(size);
-    }
+        newState = hasTrue ? true : false;
 
-    public long RecalculateSize()
-    {
-        if (!IsDirectory) return SizeBytes;
-
-        long sum = 0;
-        foreach (var child in Children)
+    ApplyState:
+        if (_isChecked == newState)
         {
-            sum += child.RecalculateSize();
+            return;
         }
 
-        if (SizeBytes != sum)
-        {
-            SizeBytes = sum;
-        }
-        return SizeBytes;
+        _isChecked = newState;
+        OnPropertyChanged(nameof(IsChecked));
+        Parent?.ReflectChildrenState();
+    }
+
+    private void SetSize(long sizeBytes)
+    {
+        SizeBytes = sizeBytes;
     }
 
     private void UpdateSizeUpwards(long deltaBytes)
@@ -205,48 +227,8 @@ public sealed class ScanNode : INotifyPropertyChanged
         Parent?.UpdateSizeUpwards(deltaBytes);
     }
 
-    public void Compact()
-    {
-        // Compact children first (bottom-up)
-        foreach (var child in Children.ToList())
-        {
-            child.Compact();
-        }
-
-        // Try to compact self with single child
-        if (IsDirectory && !IsCandidate && Children.Count == 1)
-        {
-            var child = Children[0];
-            if (child.IsDirectory)
-            {
-                // Merge child into this node
-                DisplayName = $"{DisplayName}/{child.DisplayName}";
-                FullPath = child.FullPath;
-                IsCandidate = child.IsCandidate;
-                MatchedRuleSource = child.MatchedRuleSource;
-                IgnoreRulePaths = child.IgnoreRulePaths;
-                
-                // Move grandchildren to children
-                var grandChildren = child.Children.ToList();
-                Children.Clear();
-                foreach (var gc in grandChildren)
-                {
-                    AddChild(gc);
-                }
-
-                // Update size
-                SizeBytes = child.SizeBytes;
-                
-                // Since we merged, we might be able to merge again if the child was already compacted
-                // But since we did bottom-up, 'child' is already compacted.
-                // So if 'child' had 1 child, it's already merged into 'child'.
-                // Now we merged 'child' into 'this'.
-                // So 'this' now represents 'this/child/grandChild...'.
-            }
-        }
-    }
-
     public event PropertyChangedEventHandler? PropertyChanged;
+
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));

@@ -1,25 +1,20 @@
-using System.Collections.Generic;
-using System.IO;
-
 namespace GitIgnoreCleaner.Services;
 
 public static class IgnoreFileParser
 {
-    // Returns the wrapper containing the parsed rules
-    public static IgnoreListWrapper ParseFile(string filePath)
+    public static IgnoreRuleLayer ParseFile(string filePath)
     {
-        var lines = new List<string>();
-      
-        // Basic file reading, the library will handle # comments and ! negations
+        var rules = new List<IgnorePatternRule>();
         foreach (var line in File.ReadLines(filePath))
         {
-            if (!string.IsNullOrWhiteSpace(line))
+            var rule = IgnorePatternRule.Parse(line, filePath);
+            if (rule != null)
             {
-                lines.Add(line);
+                rules.Add(rule);
             }
         }
 
-        return new IgnoreListWrapper(lines, filePath);
+        var baseDirectory = Path.GetDirectoryName(filePath) ?? throw new InvalidOperationException("Ignore file has no parent directory.");
+        return new IgnoreRuleLayer(filePath, baseDirectory, rules);
     }
 }
-

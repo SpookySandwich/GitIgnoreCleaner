@@ -2,15 +2,24 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using GitIgnoreCleaner.Models;
+using GitIgnoreCleaner.Services;
 
 namespace GitIgnoreCleaner.ViewModels;
+
+public enum UiOperationKind
+{
+    Idle,
+    Scanning,
+    Deleting,
+    Restoring
+}
 
 public sealed class MainViewModel : INotifyPropertyChanged
 {
     private string _rootPath = string.Empty;
     private string _ignoreFileNames = ".gitignore;.ignore";
-    private bool _isScanning;
-    private bool _isDeleting;
+    private string _excludedFolderNames = $".git;.vs;.idea;.vscode;{ReversibleTrashService.ReservedFolderName};$Recycle.Bin;System Volume Information;Windows;Program Files;Program Files (x86);ProgramData;Recovery;Config.Msi";
+    private UiOperationKind _operation = UiOperationKind.Idle;
     private string _summaryText = "Select a root folder and scan to preview deletions.";
     private string _errorSummary = string.Empty;
     private List<string> _errorsList = [];
@@ -19,6 +28,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private string _statusMessage = "Ready";
     private bool _showSuccessMessage;
     private string _successMessage = string.Empty;
+    private bool _hasRestorableDelete;
+    private bool _showRestoreActionInSuccess;
     private double _progressValue;
     private bool _isProgressIndeterminate;
 
@@ -46,7 +57,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
             _rootPath = value;
             OnPropertyChanged();
-            OnPropertyChanged(nameof(CanScan));
+            OnPropertyChanged(nameof(CanScanAction));
         }
     }
 
@@ -65,45 +76,51 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
     }
 
-    public bool IsScanning
+    public string ExcludedFolderNames
     {
-        get => _isScanning;
+        get => _excludedFolderNames;
         set
         {
-            if (_isScanning == value)
+            if (_excludedFolderNames == value)
             {
                 return;
             }
 
-            _isScanning = value;
+            _excludedFolderNames = value;
             OnPropertyChanged();
-            OnPropertyChanged(nameof(IsBusy));
-            OnPropertyChanged(nameof(CanScan));
-            OnPropertyChanged(nameof(CanDelete));
-            OnPropertyChanged(nameof(CanClear));
         }
     }
 
-    public bool IsDeleting
+    public UiOperationKind Operation
     {
-        get => _isDeleting;
+        get => _operation;
         set
         {
-            if (_isDeleting == value)
+            if (_operation == value)
             {
                 return;
             }
 
-            _isDeleting = value;
+            _operation = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(IsBusy));
-            OnPropertyChanged(nameof(CanScan));
+            OnPropertyChanged(nameof(IsScanning));
+            OnPropertyChanged(nameof(IsDeleting));
+            OnPropertyChanged(nameof(IsRestoring));
+            OnPropertyChanged(nameof(CanScanAction));
             OnPropertyChanged(nameof(CanDelete));
             OnPropertyChanged(nameof(CanClear));
+            OnPropertyChanged(nameof(CanRestoreLastDelete));
         }
     }
 
-    public bool IsBusy => _isScanning || _isDeleting;
+    public bool IsBusy => Operation != UiOperationKind.Idle;
+
+    public bool IsScanning => Operation == UiOperationKind.Scanning;
+
+    public bool IsDeleting => Operation == UiOperationKind.Deleting;
+
+    public bool IsRestoring => Operation == UiOperationKind.Restoring;
 
     public double ProgressValue
     {
@@ -230,6 +247,37 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
     }
 
+    public bool HasRestorableDelete
+    {
+        get => _hasRestorableDelete;
+        set
+        {
+            if (_hasRestorableDelete == value)
+            {
+                return;
+            }
+
+            _hasRestorableDelete = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(CanRestoreLastDelete));
+        }
+    }
+
+    public bool ShowRestoreActionInSuccess
+    {
+        get => _showRestoreActionInSuccess;
+        set
+        {
+            if (_showRestoreActionInSuccess == value)
+            {
+                return;
+            }
+
+            _showRestoreActionInSuccess = value;
+            OnPropertyChanged();
+        }
+    }
+
     public string StatusMessage
     {
         get => _statusMessage;
@@ -260,24 +308,27 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
     }
 
-    // CanScan is now true even if busy, because the button will turn into Cancel.
-    // But we still need a valid path.
-    public bool CanScan => !IsDeleting && !string.IsNullOrWhiteSpace(RootPath) && Directory.Exists(RootPath);
+    public bool CanScanAction =>
+        !string.IsNullOrWhiteSpace(RootPath) &&
+        Directory.Exists(RootPath) &&
+        Operation is UiOperationKind.Idle or UiOperationKind.Scanning;
 
-    public bool CanDelete => !IsBusy && HasResults;
+    public bool CanDelete => Operation == UiOperationKind.Idle && HasResults;
 
-    public bool CanClear => !IsBusy && HasResults;
+    public bool CanClear => Operation == UiOperationKind.Idle && HasResults;
+
+    public bool CanRestoreLastDelete => Operation == UiOperationKind.Idle && HasRestorableDelete;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public List<string> GetParsedIgnoreFileNames()
     {
-        return IgnoreFileNames
-            .Split([';', ','], StringSplitOptions.RemoveEmptyEntries)
-            .Select(name => name.Trim())
-            .Where(name => name.Length > 0)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        return ParseSemicolonList(IgnoreFileNames);
+    }
+
+    public List<string> GetParsedExcludedFolderNames()
+    {
+        return ParseSemicolonList(ExcludedFolderNames);
     }
 
     public void ClearResults()
@@ -289,8 +340,20 @@ public sealed class MainViewModel : INotifyPropertyChanged
         IsErrorPaneOpen = false;
         StatusMessage = "Ready";
         ShowSuccessMessage = false;
+        SuccessMessage = string.Empty;
+        ShowRestoreActionInSuccess = false;
         ProgressValue = 0;
         IsProgressIndeterminate = false;
+    }
+
+    private static List<string> ParseSemicolonList(string input)
+    {
+        return input
+            .Split([';', ','], StringSplitOptions.RemoveEmptyEntries)
+            .Select(name => name.Trim())
+            .Where(name => name.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
@@ -298,4 +361,3 @@ public sealed class MainViewModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }
-

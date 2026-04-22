@@ -1,142 +1,90 @@
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using GitIgnoreCleaner.Models;
-using Microsoft.UI.Dispatching;
 
 namespace GitIgnoreCleaner.Services;
 
 public sealed class ScanResult
 {
-    public ScanNode? RootNode { get; set; }
+    public required ScanSnapshotNode RootNode { get; set; }
+    public required DeletionPlan PreviewPlan { get; set; }
     public List<string> Errors { get; } = [];
-    public int CandidateCount { get; set; }
-    public long TotalBytes { get; set; }
+    public int ProcessedEntryCount { get; set; }
 }
 
 public sealed class ScanService
 {
+    private readonly DeletionPlanBuilder _deletionPlanBuilder = new();
+
     public Task<ScanResult> ScanAsync(
         string rootPath,
         IReadOnlyList<string> ignoreFileNames,
+        IReadOnlyList<string> excludedFolderNames,
         CancellationToken cancellationToken,
-        ObservableCollection<ScanNode>? rootChildren = null,
-        Action<ScanNode>? onRootCreated = null,
-        Action<int>? onProgress = null,
-        DispatcherQueue? dispatcher = null)
+        IProgress<int>? progress = null)
     {
-        return Task.Run(() =>
-        {
-            var result = new ScanResult();
-            var rules = new IgnoreRuleStack();
-            var ignoreSet = new HashSet<string>(ignoreFileNames, StringComparer.OrdinalIgnoreCase);
-
-            var rootNode = new ScanNode(rootPath, rootPath, isDirectory: true, isCandidate: false, children: rootChildren);
-
-            if (onRootCreated != null && dispatcher != null)
-            {
-                dispatcher.TryEnqueue(() => onRootCreated(rootNode));
-            }
-
-            int scannedCount = 0;
-            Action reportProgress = () =>
-            {
-                scannedCount++;
-                if (onProgress != null && dispatcher != null && scannedCount % 50 == 0)
-                {
-                    dispatcher.TryEnqueue(() => onProgress(scannedCount));
-                }
-            };
-
-            ScanDirectory(rootPath, rules, ignoreSet, result, cancellationToken, isRoot: true, () => rootNode, dispatcher, reportProgress);
-
-            if (onProgress != null && dispatcher != null)
-            {
-                dispatcher.TryEnqueue(() => onProgress(scannedCount));
-            }
-
-            if (dispatcher != null)
-            {
-                dispatcher.TryEnqueue(() => rootNode.RecalculateSize());
-            }
-            else
-            {
-                rootNode.RecalculateSize();
-            }
-
-            // Compact the tree to flatten single-child directories
-            if (dispatcher != null)
-            {
-                dispatcher.TryEnqueue(() => rootNode.Compact());
-            }
-            else
-            {
-                rootNode.Compact();
-            }
-
-            result.RootNode = rootNode;
-            return result;
-        }, cancellationToken);
+        return Task.Run(() => Scan(rootPath, ignoreFileNames, excludedFolderNames, cancellationToken, progress), cancellationToken);
     }
 
-    private bool ScanDirectory(
+    private ScanResult Scan(
+        string rootPath,
+        IReadOnlyList<string> ignoreFileNames,
+        IReadOnlyList<string> excludedFolderNames,
+        CancellationToken cancellationToken,
+        IProgress<int>? progress)
+    {
+        var normalizedRootPath = FileSystemEntryOperations.NormalizePath(rootPath);
+        var result = new ScanResult
+        {
+            RootNode = new ScanSnapshotNode(normalizedRootPath, normalizedRootPath, IsDirectory: true, IsCandidate: false, 0, string.Empty, [], []),
+            PreviewPlan = DeletionPlan.Empty
+        };
+
+        var orderedIgnoreFileNames = ignoreFileNames
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var ignoreSet = new HashSet<string>(orderedIgnoreFileNames, StringComparer.OrdinalIgnoreCase);
+        var excludedSet = new HashSet<string>(excludedFolderNames, StringComparer.OrdinalIgnoreCase);
+        var rules = new IgnoreRuleStack();
+        var processedEntryCount = 0;
+
+        var rootChildren = ScanDirectory(normalizedRootPath, rules, orderedIgnoreFileNames, ignoreSet, excludedSet, result, cancellationToken, progress, ref processedEntryCount);
+        var compactedChildren = rootChildren
+            .Select(CompactNode)
+            .ToList();
+
+        result.RootNode = new ScanSnapshotNode(
+            normalizedRootPath,
+            normalizedRootPath,
+            IsDirectory: true,
+            IsCandidate: false,
+            compactedChildren.Sum(child => child.SizeBytes),
+            string.Empty,
+            [],
+            compactedChildren);
+
+        result.PreviewPlan = _deletionPlanBuilder.CreatePreviewPlan(result.RootNode);
+        result.ProcessedEntryCount = processedEntryCount;
+        progress?.Report(processedEntryCount);
+
+        return result;
+    }
+
+    private static List<ScanSnapshotNode> ScanDirectory(
         string directoryPath,
         IgnoreRuleStack rules,
+        IReadOnlyList<string> orderedIgnoreFileNames,
         HashSet<string> ignoreFileNames,
+        HashSet<string> excludedFolderNames,
         ScanResult result,
         CancellationToken cancellationToken,
-        bool isRoot,
-        Func<ScanNode> getParentNode,
-        DispatcherQueue? dispatcher,
-        Action reportProgress)
+        IProgress<int>? progress,
+        ref int processedEntryCount)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var addedRuleCount = LoadIgnoreRules(directoryPath, rules, result, ignoreFileNames);
-
-        var (isDirIgnored, dirMatchedDetails, dirMatchedSource) = !isRoot
-            ? rules.CheckIgnored(directoryPath)
-            : (false, null, null);
-
-        var containsUnignored = isRoot ? false : !isDirIgnored;
-
-        ScanNode? myNode = null;
-
-        ScanNode GetMyNode()
-        {
-            if (myNode != null) return myNode;
-
-            if (isRoot)
-            {
-                myNode = getParentNode();
-            }
-            else
-            {
-                var displayName = Path.GetFileName(directoryPath);
-                var dirSource = dirMatchedDetails ?? string.Empty;
-                var dirRulePaths = dirMatchedSource != null ? [dirMatchedSource] : new List<string>();
-
-                myNode = new ScanNode(displayName, directoryPath, isDirectory: true, isCandidate: false, matchedRuleSource: dirSource, ignoreRulePaths: dirRulePaths);
-
-                var parent = getParentNode();
-
-                if (dispatcher != null)
-                {
-                    dispatcher.TryEnqueue(() => parent.AddChild(myNode));
-                }
-                else
-                {
-                    parent.AddChild(myNode);
-                }
-            }
-            return myNode;
-        }
-
+        var addedRuleCount = LoadIgnoreRules(directoryPath, rules, result, orderedIgnoreFileNames);
         string[] entries;
+
         try
         {
             entries = Directory.GetFileSystemEntries(directoryPath);
@@ -145,16 +93,26 @@ public sealed class ScanService
         {
             result.Errors.Add($"Failed to read {directoryPath}: {ex.Message}");
             rules.RemoveLast(addedRuleCount);
-            return true;
+            return [];
         }
+
+        var children = new List<ScanSnapshotNode>();
 
         foreach (var entry in entries)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            reportProgress();
+            processedEntryCount++;
+
+            if (processedEntryCount % 50 == 0)
+            {
+                progress?.Report(processedEntryCount);
+            }
 
             var name = Path.GetFileName(entry);
-            if (ignoreFileNames.Contains(name)) continue;
+            if (ignoreFileNames.Contains(name))
+            {
+                continue;
+            }
 
             FileAttributes attributes;
             try
@@ -164,112 +122,187 @@ public sealed class ScanService
             catch (Exception ex)
             {
                 result.Errors.Add($"Failed to inspect {entry}: {ex.Message}");
-                containsUnignored = true;
                 continue;
             }
 
             var isDirectory = attributes.HasFlag(FileAttributes.Directory);
-            var isReparsePoint = attributes.HasFlag(FileAttributes.ReparsePoint);
-            var shouldRecurse = isDirectory;
-
-            if (isDirectory && isReparsePoint)
+            if (isDirectory && excludedFolderNames.Contains(name))
             {
-                try
-                {
-                    var info = new DirectoryInfo(entry);
-                    if (info.LinkTarget != null) shouldRecurse = false;
-                }
-                catch { shouldRecurse = false; }
-            }
-
-            if (shouldRecurse)
-            {
-                var childContainsUnignored = ScanDirectory(entry, rules, ignoreFileNames, result, cancellationToken, isRoot: false, GetMyNode, dispatcher, reportProgress);
-                if (childContainsUnignored)
-                {
-                    containsUnignored = true;
-                }
                 continue;
             }
 
-            var (isIgnored, matchedDetails, matchedSource) = rules.CheckIgnored(entry);
-            if (!isIgnored)
+            if (isDirectory)
             {
-                containsUnignored = true;
+                if (ShouldTreatAsDirectoryLink(entry, attributes))
+                {
+                    var linkMatch = rules.Evaluate(entry, isDirectory: true);
+                    if (linkMatch.IsIgnored)
+                    {
+                        children.Add(CreateNode(name, entry, isDirectory: true, sizeBytes: 0, linkMatch, []));
+                    }
+
+                    continue;
+                }
+
+                var directoryMatch = rules.Evaluate(entry, isDirectory: true);
+                if (directoryMatch.IsIgnored)
+                {
+                    var directorySize = FileSystemEntryOperations.MeasurePathSize(entry, isDirectory: true, result.Errors);
+                    children.Add(CreateNode(name, entry, isDirectory: true, directorySize, directoryMatch, []));
+                    continue;
+                }
+
+                var nestedChildren = ScanDirectory(
+                    entry,
+                    rules,
+                    orderedIgnoreFileNames,
+                    ignoreFileNames,
+                    excludedFolderNames,
+                    result,
+                    cancellationToken,
+                    progress,
+                    ref processedEntryCount);
+
+                if (nestedChildren.Count == 0)
+                {
+                    continue;
+                }
+
+                children.Add(CreateDirectoryContainer(name, entry, nestedChildren));
                 continue;
             }
 
-            long size = 0;
-            if (!isDirectory)
+            var fileMatch = rules.Evaluate(entry, isDirectory: false);
+            if (!fileMatch.IsIgnored)
             {
-                try { size = new FileInfo(entry).Length; }
-                catch (Exception ex) { result.Errors.Add($"Failed to read size for {entry}: {ex.Message}"); }
+                continue;
             }
 
-            var source = matchedDetails ?? string.Empty;
-            var rulePaths = matchedSource != null ? [matchedSource] : new List<string>();
-
-            var fileNode = new ScanNode(name, entry, isDirectory, isCandidate: true, sizeBytes: size, matchedRuleSource: source, ignoreRulePaths: rulePaths);
-
-            var parent = GetMyNode();
-
-            if (dispatcher != null)
-            {
-                dispatcher.TryEnqueue(() => parent.AddChild(fileNode));
-            }
-            else
-            {
-                parent.AddChild(fileNode);
-            }
-
-            result.CandidateCount++;
-            result.TotalBytes += size;
+            var fileSize = FileSystemEntryOperations.MeasurePathSize(entry, isDirectory: false, result.Errors);
+            children.Add(CreateNode(name, entry, isDirectory: false, fileSize, fileMatch, []));
         }
 
         rules.RemoveLast(addedRuleCount);
+        return children;
+    }
 
-        if (isDirIgnored && !containsUnignored)
+    private static bool ShouldTreatAsDirectoryLink(string entryPath, FileAttributes attributes)
+    {
+        if (!attributes.HasFlag(FileAttributes.Directory) || !attributes.HasFlag(FileAttributes.ReparsePoint))
         {
-            var node = GetMyNode();
-
-            if (dispatcher != null)
-            {
-                dispatcher.TryEnqueue(() =>
-                {
-                    node.SetIsCandidate(true);
-                });
-            }
-            else
-            {
-                node.SetIsCandidate(true);
-            }
-
-            result.CandidateCount++;
+            return false;
         }
 
-        return containsUnignored;
+        try
+        {
+            var info = new DirectoryInfo(entryPath);
+            return info.LinkTarget != null;
+        }
+        catch
+        {
+            return true;
+        }
+    }
+
+    private static ScanSnapshotNode CreateDirectoryContainer(string displayName, string fullPath, IReadOnlyList<ScanSnapshotNode> children)
+    {
+        return new ScanSnapshotNode(
+            displayName,
+            FileSystemEntryOperations.NormalizePath(fullPath),
+            IsDirectory: true,
+            IsCandidate: false,
+            children.Sum(child => child.SizeBytes),
+            string.Empty,
+            [],
+            children);
+    }
+
+    private static ScanSnapshotNode CreateNode(
+        string displayName,
+        string fullPath,
+        bool isDirectory,
+        long sizeBytes,
+        IgnoreMatch match,
+        IReadOnlyList<ScanSnapshotNode> children)
+    {
+        var ignoreRulePaths = match.SourceFile is null
+            ? Array.Empty<string>()
+            : [match.SourceFile];
+
+        return new ScanSnapshotNode(
+            displayName,
+            FileSystemEntryOperations.NormalizePath(fullPath),
+            IsDirectory: isDirectory,
+            IsCandidate: true,
+            sizeBytes,
+            match.MatchedRule ?? string.Empty,
+            ignoreRulePaths,
+            children);
+    }
+
+    private static ScanSnapshotNode CompactNode(ScanSnapshotNode node)
+    {
+        if (!node.IsDirectory)
+        {
+            return node;
+        }
+
+        var compactedChildren = node.Children
+            .Select(CompactNode)
+            .ToList();
+
+        var effectiveSize = compactedChildren.Count > 0
+            ? compactedChildren.Sum(child => child.SizeBytes)
+            : node.SizeBytes;
+
+        var current = node with
+        {
+            SizeBytes = effectiveSize,
+            Children = compactedChildren
+        };
+
+        while (current is { IsCandidate: false } && current.Children.Count == 1 && current.Children[0].IsDirectory)
+        {
+            var child = current.Children[0];
+            current = new ScanSnapshotNode(
+                $"{current.DisplayName}/{child.DisplayName}",
+                child.FullPath,
+                IsDirectory: true,
+                child.IsCandidate,
+                child.SizeBytes,
+                child.MatchedRuleSource,
+                child.IgnoreRulePaths,
+                child.Children);
+        }
+
+        return current;
     }
 
     private static int LoadIgnoreRules(
         string directoryPath,
         IgnoreRuleStack rules,
         ScanResult result,
-        HashSet<string> ignoreFileNames)
+        IReadOnlyList<string> orderedIgnoreFileNames)
     {
         var addedRuleCount = 0;
 
-        foreach (var ignoreFileName in ignoreFileNames)
+        foreach (var ignoreFileName in orderedIgnoreFileNames)
         {
             var ignorePath = Path.Combine(directoryPath, ignoreFileName);
-            if (!File.Exists(ignorePath)) continue;
+            if (!File.Exists(ignorePath))
+            {
+                continue;
+            }
 
             try
             {
                 var attributes = File.GetAttributes(ignorePath);
-                if (attributes.HasFlag(FileAttributes.Offline)) continue;
+                if (attributes.HasFlag(FileAttributes.Offline))
+                {
+                    continue;
+                }
 
-                var layer = IgnoreFileParser.ParseFile(ignorePath);
-                rules.Add(layer);
+                rules.Add(IgnoreFileParser.ParseFile(ignorePath));
                 addedRuleCount++;
             }
             catch (Exception ex)
