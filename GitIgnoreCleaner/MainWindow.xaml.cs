@@ -1,8 +1,7 @@
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading;
+using System.Reflection;
 using System.Threading.Tasks;
 using GitIgnoreCleaner.Helpers;
 using GitIgnoreCleaner.Models;
@@ -11,6 +10,7 @@ using GitIgnoreCleaner.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using WinRT.Interop;
+using Windows.ApplicationModel;
 using Windows.Graphics;
 using Windows.Storage.Pickers;
 
@@ -18,14 +18,18 @@ namespace GitIgnoreCleaner;
 
 public sealed partial class MainWindow : Window
 {
+    private const string RepositoryUrl = "https://github.com/SpookySandwich/GitIgnoreCleaner";
+    private const string LicenseUrl = "https://github.com/SpookySandwich/GitIgnoreCleaner/blob/master/LICENSE.txt";
+
     private readonly MainViewModel _viewModel = new();
     private readonly ScanService _scanService = new();
     private readonly DeleteService _deleteService = new();
 
-    private ReversibleDeleteSession? _lastDeleteSession;
     private CancellationTokenSource? _scanCts;
     private IntPtr _windowHandle;
-    private int _restoreLoadVersion;
+    private bool _languageSelectionReady;
+    private bool _languageDropDownOpen;
+    private string? _pendingLanguageTag;
 
     public MainWindow()
     {
@@ -45,7 +49,11 @@ public sealed partial class MainWindow : Window
             root.DataContext = _viewModel;
         }
 
-        _viewModel.PropertyChanged += ViewModel_PropertyChanged;
+        LanguageComboBox.DropDownOpened += LanguageComboBox_DropDownOpened;
+        LanguageComboBox.DropDownClosed += LanguageComboBox_DropDownClosed;
+        ApplyLocalizedText();
+        _viewModel.ApplicationVersionLabel = LocalizationService.GetVersionLabel(GetApplicationVersion());
+        _languageSelectionReady = true;
 
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
@@ -53,10 +61,40 @@ public sealed partial class MainWindow : Window
 
         Closed += (_, _) =>
         {
-            _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
             _scanCts?.Cancel();
             _scanCts?.Dispose();
         };
+    }
+
+    private void ApplyLocalizedText()
+    {
+        Title = LocalizationService.GetString("AppDisplayName");
+        AppTitleBar.Title = LocalizationService.GetString("AppDisplayName");
+        WarningsPaneTitleText.Text = GetXamlResource("WarningsPaneTitleText.Text");
+        MainTitleText.Text = LocalizationService.GetString("AppDisplayName");
+        RootFolderTextBox.Header = GetXamlResource("RootFolderTextBox.Header");
+        RootFolderTextBox.PlaceholderText = GetXamlResource("RootFolderTextBox.PlaceholderText");
+        BrowseButton.Content = GetXamlResource("BrowseButton.Content");
+        IgnoreFileNamesTextBox.Header = GetXamlResource("IgnoreFileNamesTextBox.Header");
+        IgnoreFileNamesTextBox.Description = GetXamlResource("IgnoreFileNamesTextBox.Description");
+        IgnoreFileNamesTextBox.PlaceholderText = GetXamlResource("IgnoreFileNamesTextBox.PlaceholderText");
+        ScanExclusionsTitleText.Text = GetXamlResource("ScanExclusionsTitleText.Text");
+        EditExclusionsButton.Content = GetXamlResource("EditExclusionsButton.Content");
+        DeleteSelectedText.Text = GetXamlResource("DeleteSelectedText.Text");
+        ClearText.Text = GetXamlResource("ClearText.Text");
+        PermanentlyDeleteCheckBox.Content = GetXamlResource("PermanentlyDeleteCheckBox.Content");
+        WarningsInfoBar.Title = GetXamlResource("WarningsInfoBar.Title");
+        ViewErrorsButton.Content = GetXamlResource("ViewErrorsButton.Content");
+        SuccessInfoBar.Title = GetXamlResource("SuccessInfoBar.Title");
+        EmptyStateText.Text = GetXamlResource("EmptyStateText.Text");
+        SettingsButton.Label = LocalizationService.GetString("SettingsButtonLabel");
+        ToolTipService.SetToolTip(SettingsButton, LocalizationService.GetString("SettingsButtonToolTip"));
+        SettingsTitleText.Text = GetXamlResource("SettingsTitleText.Text");
+        SettingsAppNameText.Text = LocalizationService.GetString("AppDisplayName");
+        SettingsDescriptionText.Text = LocalizationService.GetString("AppDescription");
+        DisplayLanguageSettingsCard.Header = LocalizationService.GetString("DisplayLanguageCardHeader");
+        LicenseLink.Content = GetXamlResource("LicenseLink.Content");
+        RepositoryLink.Content = GetXamlResource("RepositoryLink.Content");
     }
 
     private void SetDefaultWindowSize()
@@ -70,52 +108,67 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    private static string GetApplicationVersion()
     {
-        if (e.PropertyName == nameof(MainViewModel.RootPath))
-        {
-            _ = RefreshRestoreSessionAsync(_viewModel.RootPath);
-        }
-    }
-
-    private async Task RefreshRestoreSessionAsync(string rootPath)
-    {
-        var requestVersion = Interlocked.Increment(ref _restoreLoadVersion);
-        _viewModel.ShowRestoreActionInSuccess = false;
-        ApplyRestorableSession(null);
-
-        var trimmedRoot = rootPath.Trim();
-        if (_viewModel.Operation != UiOperationKind.Idle ||
-            string.IsNullOrWhiteSpace(trimmedRoot) ||
-            !Directory.Exists(trimmedRoot))
-        {
-            return;
-        }
-
-        ReversibleDeleteSession? session;
         try
         {
-            session = await Task.Run(() => _deleteService.TryLoadLatestSession(trimmedRoot));
+            var version = Package.Current.Id.Version;
+            return $"{version.Major}.{version.Minor}.{version.Build}.{version.Revision}";
         }
         catch
         {
-            return;
         }
 
-        if (requestVersion != _restoreLoadVersion ||
-            _viewModel.Operation != UiOperationKind.Idle ||
-            !string.Equals(_viewModel.RootPath.Trim(), trimmedRoot, StringComparison.OrdinalIgnoreCase))
+        try
         {
-            return;
+            var informationalVersion = Assembly
+                .GetExecutingAssembly()
+                .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+                ?.InformationalVersion;
+
+            if (!string.IsNullOrWhiteSpace(informationalVersion))
+            {
+                return informationalVersion.Split('+')[0];
+            }
+        }
+        catch
+        {
         }
 
-        ApplyRestorableSession(session);
+        try
+        {
+            var assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version;
+            if (assemblyVersion != null)
+            {
+                return $"{assemblyVersion.Major}.{assemblyVersion.Minor}.{assemblyVersion.Build}.{assemblyVersion.Revision}";
+            }
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            var processPath = Environment.ProcessPath;
+            if (!string.IsNullOrWhiteSpace(processPath))
+            {
+                var fileVersion = FileVersionInfo.GetVersionInfo(processPath).FileVersion;
+                if (!string.IsNullOrWhiteSpace(fileVersion))
+                {
+                    return fileVersion;
+                }
+            }
+        }
+        catch
+        {
+        }
+
+        return "1.0.0.0";
     }
 
-    private void ApplyRestorableSession(ReversibleDeleteSession? session)
+    private static string GetXamlResource(string key)
     {
-        _lastDeleteSession = session;
-        _viewModel.HasRestorableDelete = session is { Entries.Count: > 0 };
+        return LocalizationService.GetString(key.Replace(".", "/"));
     }
 
     private List<string> GetConfiguredIgnoreFileNames()
@@ -138,7 +191,7 @@ public sealed partial class MainWindow : Window
             GetConfiguredIgnoreFileNames(),
             GetConfiguredExcludedFolderNames(),
             CancellationToken.None,
-            new Progress<int>(count => _viewModel.StatusMessage = $"Refreshing results... {count} items processed"));
+            new Progress<int>(count => _viewModel.StatusMessage = LocalizationService.Format("StatusRefreshingProgress", count)));
 
         ApplyScanResults(result);
         return result;
@@ -148,8 +201,8 @@ public sealed partial class MainWindow : Window
     {
         ReplaceResults(result.RootNode);
         _viewModel.SummaryText = result.PreviewPlan.Count == 0
-            ? "No ignored files or directories were found."
-            : $"{result.PreviewPlan.Count} items matched, {StringHelper.FormatBytes(result.PreviewPlan.TotalBytes)} total size.";
+            ? LocalizationService.GetString("SummaryNoMatches")
+            : LocalizationService.Format("SummaryMatches", result.PreviewPlan.Count, StringHelper.FormatBytes(result.PreviewPlan.TotalBytes));
     }
 
     private void ReplaceResults(ScanSnapshotNode rootNode)
@@ -257,17 +310,17 @@ public sealed partial class MainWindow : Window
         var stackPanel = new StackPanel { Spacing = 8 };
         stackPanel.Children.Add(new TextBlock
         {
-            Text = "Enter folder names to skip during scanning (one per line):",
+            Text = LocalizationService.GetString("ExclusionsDialogPrompt"),
             Style = (Style)Application.Current.Resources["BodyTextBlockStyle"]
         });
         stackPanel.Children.Add(textBox);
 
         var dialog = new ContentDialog
         {
-            Title = "Manage Scan Exclusions",
+            Title = LocalizationService.GetString("ExclusionsDialogTitle"),
             Content = stackPanel,
-            PrimaryButtonText = "Save",
-            CloseButtonText = "Cancel",
+            PrimaryButtonText = LocalizationService.GetString("DialogSave"),
+            CloseButtonText = LocalizationService.GetString("DialogCancel"),
             DefaultButton = ContentDialogButton.Primary,
             XamlRoot = GetXamlRoot()
         };
@@ -289,7 +342,7 @@ public sealed partial class MainWindow : Window
         if (_viewModel.IsScanning)
         {
             _scanCts?.Cancel();
-            _viewModel.StatusMessage = "Canceling scan...";
+            _viewModel.StatusMessage = LocalizationService.GetString("StatusCancelingScan");
             return;
         }
 
@@ -301,7 +354,7 @@ public sealed partial class MainWindow : Window
         var rootPath = _viewModel.RootPath.Trim();
         if (string.IsNullOrWhiteSpace(rootPath) || !Directory.Exists(rootPath))
         {
-            await ShowMessageAsync("Select a valid root folder before scanning.");
+            await ShowMessageAsync(LocalizationService.GetString("MessageInvalidRootScan"));
             return;
         }
 
@@ -309,8 +362,7 @@ public sealed partial class MainWindow : Window
         _viewModel.Operation = UiOperationKind.Scanning;
         _viewModel.IsProgressIndeterminate = true;
         _viewModel.ProgressValue = 0;
-        _viewModel.StatusMessage = "Scanning...";
-        _viewModel.ShowRestoreActionInSuccess = false;
+        _viewModel.StatusMessage = LocalizationService.GetString("StatusScanning");
 
         _scanCts?.Cancel();
         _scanCts?.Dispose();
@@ -323,33 +375,32 @@ public sealed partial class MainWindow : Window
                 GetConfiguredIgnoreFileNames(),
                 GetConfiguredExcludedFolderNames(),
                 _scanCts.Token,
-                new Progress<int>(count => _viewModel.StatusMessage = $"Scanning... {count} items processed"));
+                new Progress<int>(count => _viewModel.StatusMessage = LocalizationService.Format("StatusScanningProgress", count)));
 
             ApplyScanResults(result);
 
             _viewModel.ErrorsList = result.Errors.ToList();
             _viewModel.ErrorSummary = BuildErrorSummary(_viewModel.ErrorsList);
             _viewModel.StatusMessage = result.Errors.Count == 0
-                ? "Scan completed."
-                : "Scan completed with warnings.";
+                ? LocalizationService.GetString("StatusScanCompleted")
+                : LocalizationService.GetString("StatusScanCompletedWithWarnings");
 
             if (result.PreviewPlan.Count > 0)
             {
-                _viewModel.SuccessMessage = $"Found {result.PreviewPlan.Count} items totaling {StringHelper.FormatBytes(result.PreviewPlan.TotalBytes)}.";
+                _viewModel.SuccessMessage = LocalizationService.Format("SuccessFoundItems", result.PreviewPlan.Count, StringHelper.FormatBytes(result.PreviewPlan.TotalBytes));
                 _viewModel.ShowSuccessMessage = true;
-                _viewModel.ShowRestoreActionInSuccess = false;
             }
         }
         catch (OperationCanceledException)
         {
             _viewModel.ClearResults();
-            _viewModel.StatusMessage = "Scan canceled.";
-            _viewModel.SummaryText = "Scan canceled before results were finalized.";
+            _viewModel.StatusMessage = LocalizationService.GetString("StatusScanCanceled");
+            _viewModel.SummaryText = LocalizationService.GetString("SummaryScanCanceled");
         }
         catch (Exception ex)
         {
             _viewModel.ClearResults();
-            _viewModel.StatusMessage = "Scan failed.";
+            _viewModel.StatusMessage = LocalizationService.GetString("StatusScanFailed");
             _viewModel.ErrorsList = [ex.Message];
             _viewModel.ErrorSummary = BuildErrorSummary(_viewModel.ErrorsList);
         }
@@ -371,25 +422,29 @@ public sealed partial class MainWindow : Window
         var rootPath = _viewModel.RootPath.Trim();
         if (string.IsNullOrWhiteSpace(rootPath) || !Directory.Exists(rootPath))
         {
-            await ShowMessageAsync("Select a valid root folder before deleting.");
+            await ShowMessageAsync(LocalizationService.GetString("MessageInvalidRootDelete"));
             return;
         }
 
         var plan = _deleteService.CreateDeletionPlan(_viewModel.Results);
         if (plan.Count == 0)
         {
-            await ShowMessageAsync("No items are selected for deletion.");
+            await ShowMessageAsync(LocalizationService.GetString("MessageNoItemsSelected"));
             return;
         }
 
         var confirm = new ContentDialog
         {
-            Title = _viewModel.PermanentlyDelete ? "Confirm permanent delete" : "Confirm reversible delete",
+            Title = _viewModel.PermanentlyDelete
+                ? LocalizationService.GetString("ConfirmPermanentDeleteTitle")
+                : LocalizationService.GetString("ConfirmReversibleDeleteTitle"),
             Content = _viewModel.PermanentlyDelete
-                ? $"Delete {plan.Count} items totaling {StringHelper.FormatBytes(plan.TotalBytes)} permanently? This action can't be undone."
-                : $"Move {plan.Count} items totaling {StringHelper.FormatBytes(plan.TotalBytes)} into GitIgnoreCleaner's reversible trash? You can restore the last delete later.",
-            PrimaryButtonText = _viewModel.PermanentlyDelete ? "Delete" : "Move to Trash",
-            CloseButtonText = "Cancel",
+                ? LocalizationService.Format("ConfirmPermanentDeleteContent", plan.Count, StringHelper.FormatBytes(plan.TotalBytes))
+                : LocalizationService.Format("ConfirmReversibleDeleteContent", plan.Count, StringHelper.FormatBytes(plan.TotalBytes)),
+            PrimaryButtonText = _viewModel.PermanentlyDelete
+                ? LocalizationService.GetString("DialogDelete")
+                : LocalizationService.GetString("DialogMoveToTrash"),
+            CloseButtonText = LocalizationService.GetString("DialogCancel"),
             XamlRoot = GetXamlRoot()
         };
 
@@ -401,9 +456,8 @@ public sealed partial class MainWindow : Window
         _viewModel.Operation = UiOperationKind.Deleting;
         _viewModel.IsProgressIndeterminate = false;
         _viewModel.ProgressValue = 0;
-        _viewModel.StatusMessage = "Deleting...";
+        _viewModel.StatusMessage = LocalizationService.GetString("StatusDeleting");
         _viewModel.ShowSuccessMessage = false;
-        _viewModel.ShowRestoreActionInSuccess = false;
 
         var deletedCount = 0;
         var totalCount = plan.Count;
@@ -411,12 +465,12 @@ public sealed partial class MainWindow : Window
         {
             deletedCount++;
             _viewModel.ProgressValue = totalCount == 0 ? 0 : (double)deletedCount / totalCount * 100;
-            _viewModel.StatusMessage = $"Deleting... {deletedCount}/{totalCount}";
+            _viewModel.StatusMessage = LocalizationService.Format("StatusDeletingProgress", deletedCount, totalCount);
         });
 
         try
         {
-            var deleteResult = await _deleteService.DeleteTargetsAsync(rootPath, plan, _viewModel.PermanentlyDelete, progress);
+            var deleteResult = await _deleteService.DeleteTargetsAsync(plan, _viewModel.PermanentlyDelete, progress);
             var deletedBytes = deleteResult.DeletedEntries.Sum(item => item.SizeBytes);
             var allErrors = deleteResult.Errors.ToList();
             ScanResult? refreshResult = null;
@@ -432,8 +486,8 @@ public sealed partial class MainWindow : Window
                 }
                 catch (Exception ex)
                 {
-                    ClearResultsAfterMutationRefreshFailure("Items changed, but refreshing the current results failed. Run Scan again.");
-                    allErrors.Add($"Deleted items, but refreshing the current results failed: {ex.Message}");
+                    ClearResultsAfterMutationRefreshFailure(LocalizationService.GetString("SummaryDeleteRefreshFailed"));
+                    allErrors.Add(LocalizationService.Format("ErrorDeleteRefreshFailed", ex.Message));
                 }
             }
 
@@ -442,29 +496,22 @@ public sealed partial class MainWindow : Window
 
             if (deleteResult.DeletedEntries.Count > 0)
             {
-                var refreshedSuffix = refreshResult != null ? " and refreshed the results." : ".";
                 _viewModel.SuccessMessage = _viewModel.PermanentlyDelete
-                    ? $"Deleted {deleteResult.DeletedEntries.Count} items totaling {StringHelper.FormatBytes(deletedBytes)}{refreshedSuffix}"
-                    : $"Moved {deleteResult.DeletedEntries.Count} items totaling {StringHelper.FormatBytes(deletedBytes)} into reversible trash{refreshedSuffix}";
+                    ? LocalizationService.Format("SuccessDeleted", deleteResult.DeletedEntries.Count, StringHelper.FormatBytes(deletedBytes))
+                    : LocalizationService.Format("SuccessMovedToTrash", deleteResult.DeletedEntries.Count, StringHelper.FormatBytes(deletedBytes));
                 _viewModel.ShowSuccessMessage = true;
-                _viewModel.ShowRestoreActionInSuccess = !_viewModel.PermanentlyDelete && deleteResult.Session != null;
-            }
-
-            if (!_viewModel.PermanentlyDelete && deleteResult.Session != null)
-            {
-                ApplyRestorableSession(deleteResult.Session);
             }
 
             _viewModel.StatusMessage = deleteResult switch
             {
-                { DeletedEntries.Count: 0, Errors.Count: > 0 } => "Delete failed.",
-                { Errors.Count: > 0 } => "Delete completed with warnings.",
-                _ => "Delete completed."
+                { DeletedEntries.Count: 0, Errors.Count: > 0 } => LocalizationService.GetString("StatusDeleteFailed"),
+                { Errors.Count: > 0 } => LocalizationService.GetString("StatusDeleteCompletedWithWarnings"),
+                _ => LocalizationService.GetString("StatusDeleteCompleted")
             };
         }
         catch (Exception ex)
         {
-            _viewModel.StatusMessage = "Delete failed.";
+            _viewModel.StatusMessage = LocalizationService.GetString("StatusDeleteFailed");
             _viewModel.ErrorsList = [ex.Message];
             _viewModel.ErrorSummary = BuildErrorSummary(_viewModel.ErrorsList);
         }
@@ -500,92 +547,13 @@ public sealed partial class MainWindow : Window
     {
         var dialog = new ContentDialog
         {
-            Title = "GitIgnoreCleaner",
+            Title = LocalizationService.GetString("DialogAppTitle"),
             Content = message,
-            CloseButtonText = "OK",
+            CloseButtonText = LocalizationService.GetString("DialogOk"),
             XamlRoot = GetXamlRoot()
         };
 
         await dialog.ShowAsync();
-    }
-
-    private async void RestoreLastDelete_Click(object sender, RoutedEventArgs e)
-    {
-        if (_viewModel.Operation != UiOperationKind.Idle || _lastDeleteSession == null)
-        {
-            return;
-        }
-
-        _viewModel.Operation = UiOperationKind.Restoring;
-        _viewModel.IsProgressIndeterminate = true;
-        _viewModel.ProgressValue = 0;
-        _viewModel.StatusMessage = "Restoring last delete...";
-        _viewModel.ShowSuccessMessage = false;
-        _viewModel.ShowRestoreActionInSuccess = false;
-
-        try
-        {
-            var restoreResult = await _deleteService.RestoreLastDeleteAsync(_lastDeleteSession);
-            ApplyRestorableSession(restoreResult.RemainingSession);
-
-            var allErrors = restoreResult.Errors.ToList();
-            ScanResult? refreshResult = null;
-            var refreshFailed = false;
-            var rootPath = _viewModel.RootPath.Trim();
-
-            if (restoreResult.RestoredCount > 0 &&
-                !string.IsNullOrWhiteSpace(rootPath) &&
-                Directory.Exists(rootPath))
-            {
-                try
-                {
-                    refreshResult = await RefreshCurrentResultsAsync(rootPath);
-                    allErrors.AddRange(refreshResult.Errors);
-                }
-                catch (Exception ex)
-                {
-                    refreshFailed = true;
-                    ClearResultsAfterMutationRefreshFailure("Items were restored, but refreshing the current results failed. Run Scan again.");
-                    allErrors.Add($"Restored items, but refreshing the current results failed: {ex.Message}");
-                }
-            }
-
-            _viewModel.ErrorsList = allErrors;
-            _viewModel.ErrorSummary = BuildErrorSummary(_viewModel.ErrorsList);
-
-            if (restoreResult.RestoredCount > 0)
-            {
-                var itemLabel = restoreResult.RestoredCount == 1 ? "item" : "items";
-                _viewModel.SuccessMessage = refreshResult != null
-                    ? $"Restored {restoreResult.RestoredCount} {itemLabel} and refreshed the results."
-                    : $"Restored {restoreResult.RestoredCount} {itemLabel}.";
-                _viewModel.ShowSuccessMessage = true;
-            }
-
-            if (restoreResult.RestoredCount > 0 && refreshResult == null && !refreshFailed)
-            {
-                _viewModel.SummaryText = "Items were restored. Run Scan again to refresh the current results.";
-            }
-
-            _viewModel.StatusMessage = restoreResult switch
-            {
-                { RestoredCount: 0, Errors.Count: > 0 } => "Restore failed.",
-                { Errors.Count: > 0 } => "Restore completed with warnings.",
-                _ => "Restore completed."
-            };
-        }
-        catch (Exception ex)
-        {
-            _viewModel.StatusMessage = "Restore failed.";
-            _viewModel.ErrorsList = [ex.Message];
-            _viewModel.ErrorSummary = BuildErrorSummary(_viewModel.ErrorsList);
-        }
-        finally
-        {
-            _viewModel.Operation = UiOperationKind.Idle;
-            _viewModel.IsProgressIndeterminate = false;
-            _viewModel.ProgressValue = 0;
-        }
     }
 
     private static string BuildErrorSummary(IReadOnlyList<string> errors)
@@ -603,7 +571,7 @@ public sealed partial class MainWindow : Window
         var preview = string.Join(" | ", errors.Take(2));
         return errors.Count == 2
             ? preview
-            : $"{preview} | {errors.Count - 2} more";
+            : $"{preview} | {LocalizationService.Format("ErrorSummaryMore", errors.Count - 2)}";
     }
 
     private Microsoft.UI.Xaml.XamlRoot? GetXamlRoot()
@@ -640,7 +608,7 @@ public sealed partial class MainWindow : Window
         var paths = node.IgnoreRulePaths;
         if (paths.Count == 0)
         {
-            await ShowMessageAsync("No ignore file associated with this item.");
+            await ShowMessageAsync(LocalizationService.GetString("MessageNoIgnoreFileAssociated"));
             return;
         }
 
@@ -652,8 +620,8 @@ public sealed partial class MainWindow : Window
 
         var dialog = new ContentDialog
         {
-            Title = "Select Ignore File",
-            CloseButtonText = "Cancel",
+            Title = LocalizationService.GetString("DialogSelectIgnoreFile"),
+            CloseButtonText = LocalizationService.GetString("DialogCancel"),
             XamlRoot = GetXamlRoot()
         };
 
@@ -686,7 +654,121 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            _ = ShowMessageAsync($"Failed to open file: {ex.Message}");
+            _ = ShowMessageAsync(LocalizationService.Format("ErrorOpenFileFailed", ex.Message));
+        }
+    }
+
+    private void OpenSettings_Click(object sender, RoutedEventArgs e)
+    {
+        _viewModel.CurrentPage = AppPageKind.Settings;
+    }
+
+    private async void LanguageComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_languageSelectionReady ||
+            sender is not ComboBox comboBox ||
+            comboBox.SelectedValue is not string selectedTag)
+        {
+            return;
+        }
+
+        if (_languageDropDownOpen)
+        {
+            _pendingLanguageTag = selectedTag;
+        }
+    }
+
+    private void LanguageComboBox_DropDownOpened(object? sender, object e)
+    {
+        _languageDropDownOpen = true;
+        _pendingLanguageTag = _viewModel.SelectedLanguageTag;
+    }
+
+    private async void LanguageComboBox_DropDownClosed(object? sender, object e)
+    {
+        if (!_languageSelectionReady || !_languageDropDownOpen)
+        {
+            return;
+        }
+
+        _languageDropDownOpen = false;
+        if (string.IsNullOrWhiteSpace(_pendingLanguageTag))
+        {
+            return;
+        }
+
+        var selectedTag = _pendingLanguageTag;
+        _pendingLanguageTag = null;
+        await ApplyLanguageSelectionAsync(selectedTag);
+    }
+
+    private async Task ApplyLanguageSelectionAsync(string selectedTag)
+    {
+        var previousTag = LocalizationService.GetSavedLanguageSelectionTag();
+        if (string.Equals(selectedTag, previousTag, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        try
+        {
+            LocalizationService.SavePreferredLanguage(selectedTag);
+        }
+        catch (Exception ex)
+        {
+            _viewModel.SelectedLanguageTag = previousTag;
+            await ShowMessageAsync(LocalizationService.Format("LanguagePreferenceSaveFailed", ex.Message));
+            return;
+        }
+
+        var restartFailure = Microsoft.Windows.AppLifecycle.AppInstance.Restart(string.Empty);
+
+        try
+        {
+            LocalizationService.SavePreferredLanguage(previousTag);
+        }
+        catch
+        {
+        }
+
+        _viewModel.SelectedLanguageTag = previousTag;
+        await ShowMessageAsync(LocalizationService.Format("LanguageRestartFailed", restartFailure));
+    }
+
+    private void CloseSettings_Click(object sender, RoutedEventArgs e)
+    {
+        ShowMainPage();
+    }
+
+    private void AppTitleBar_BackRequested(TitleBar sender, object args)
+    {
+        ShowMainPage();
+    }
+
+    private void ShowMainPage()
+    {
+        _viewModel.CurrentPage = AppPageKind.Main;
+    }
+
+    private void OpenRepository_Click(object sender, RoutedEventArgs e)
+    {
+        OpenUrl(RepositoryUrl);
+    }
+
+    private void OpenLicense_Click(object sender, RoutedEventArgs e)
+    {
+        OpenUrl(LicenseUrl);
+    }
+
+    private void OpenUrl(string url)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            _ = ShowMessageAsync(LocalizationService.Format("ErrorOpenLinkFailed", ex.Message));
         }
     }
 }

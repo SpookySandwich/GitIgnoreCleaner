@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using GitIgnoreCleaner.Helpers;
+using GitIgnoreCleaner.Services;
 
 namespace GitIgnoreCleaner.Models;
 
@@ -64,7 +65,11 @@ public sealed class ScanNode : INotifyPropertyChanged
 
     public string SizeText => SizeBytes > 0 ? StringHelper.FormatBytes(SizeBytes) : string.Empty;
 
-    public string HintText => !IsCandidate && IsDirectory ? "contains matches" : string.Empty;
+    public string HintText => !IsCandidate && IsDirectory ? LocalizationService.GetString("HintContainsMatches") : string.Empty;
+
+    public string OpenInExplorerText => LocalizationService.GetString("OpenInExplorerMenuItem/Text");
+
+    public string OpenIgnoreFileText => LocalizationService.GetString("OpenIgnoreFileMenuItem/Text");
 
     public bool? IsChecked
     {

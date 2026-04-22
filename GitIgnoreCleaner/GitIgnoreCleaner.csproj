@@ -41,8 +41,13 @@
     <ProjectCapability Include="Msix" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.7175" />
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.251107005" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.1721" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools.MSIX" Version="1.7.260316102">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260416003" />
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.251219" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Views\ScanPage.xaml">
@@ -73,13 +78,17 @@
 	<GenerateAppInstallerFile>False</GenerateAppInstallerFile>
 	<AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
 	<AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
-	<AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
-	<GenerateTestArtifacts>True</GenerateTestArtifacts>
+	<AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
+	<GenerateTestArtifacts>False</GenerateTestArtifacts>
+	<BuildAppxUploadPackageForUap Condition="'$(BuildAppxUploadPackageForUap)' == ''">False</BuildAppxUploadPackageForUap>
+	<AppxBundleAutoResourcePackageQualifiers>Scale|DXFeatureLevel</AppxBundleAutoResourcePackageQualifiers>
+	<AppxDefaultResourceQualifiers>Language=en-US;zh-Hans;ja-JP;ru-RU</AppxDefaultResourceQualifiers>
 	<AppxBundle>Always</AppxBundle>
 	<AppxBundlePlatforms>x86|x64</AppxBundlePlatforms>
 	<HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
-	<AppxSymbolPackageEnabled>True</AppxSymbolPackageEnabled>
-	<AppxPackageDir>D:\GitIgnoreCleaner\GitIgnoreCleaner\\AppPackages\</AppxPackageDir>
+	<AppxSymbolPackageEnabled Condition="'$(AppxSymbolPackageEnabled)' == ''">False</AppxSymbolPackageEnabled>
+	<AppxPackageDir>D:\GitIgnoreCleaner\GitIgnoreCleaner\AppPackages\</AppxPackageDir>
 	<PackageCertificateThumbprint>0EA1FF0CED0F5B8BB0571A4893871C0E59588529</PackageCertificateThumbprint>
+	<AppxSymbolPackageEnabled>True</AppxSymbolPackageEnabled>
   </PropertyGroup>
 </Project>

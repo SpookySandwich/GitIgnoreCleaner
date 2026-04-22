@@ -91,7 +91,7 @@ public sealed class ScanService
         }
         catch (Exception ex)
         {
-            result.Errors.Add($"Failed to read {directoryPath}: {ex.Message}");
+            result.Errors.Add(LocalizationService.Format("ErrorReadDirectory", directoryPath, ex.Message));
             rules.RemoveLast(addedRuleCount);
             return [];
         }
@@ -121,7 +121,7 @@ public sealed class ScanService
             }
             catch (Exception ex)
             {
-                result.Errors.Add($"Failed to inspect {entry}: {ex.Message}");
+                result.Errors.Add(LocalizationService.Format("ErrorInspectEntry", entry, ex.Message));
                 continue;
             }
 
@@ -307,7 +307,7 @@ public sealed class ScanService
             }
             catch (Exception ex)
             {
-                result.Errors.Add($"Failed to read ignore file {ignorePath}: {ex.Message}");
+                result.Errors.Add(LocalizationService.Format("ErrorReadIgnoreFile", ignorePath, ex.Message));
             }
         }
 

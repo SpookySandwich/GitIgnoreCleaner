@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AppDisplayName" xml:space="preserve"><value>GitIgnoreCleaner</value></data>
+  <data name="AppPublisherDisplayName" xml:space="preserve"><value>Charlie Pu</value></data>
+  <data name="AppDescription" xml:space="preserve"><value>Очищает по всему проекту артефакты сборки и временные файлы, попавшие под правила ignore.</value></data>
+  <data name="MainWindow.Title" xml:space="preserve"><value>GitIgnoreCleaner</value></data>
+  <data name="WarningsPaneTitleText.Text" xml:space="preserve"><value>Предупреждения</value></data>
+  <data name="MainDescriptionText.Text" xml:space="preserve"><value>Удаляет по всему проекту артефакты сборки и временные файлы, попавшие под правила ignore.</value></data>
+  <data name="RootFolderTextBox.Header" xml:space="preserve"><value>Корневая папка</value></data>
+  <data name="RootFolderTextBox.PlaceholderText" xml:space="preserve"><value>Выберите папку для сканирования</value></data>
+  <data name="BrowseButton.Content" xml:space="preserve"><value>Обзор</value></data>
+  <data name="IgnoreFileNamesTextBox.Header" xml:space="preserve"><value>Имена ignore-файлов</value></data>
+  <data name="IgnoreFileNamesTextBox.Description" xml:space="preserve"><value>Через точку с запятой, например: .gitignore</value></data>
+  <data name="IgnoreFileNamesTextBox.PlaceholderText" xml:space="preserve"><value>.gitignore;.ignore</value></data>
+  <data name="ScanExclusionsTitleText.Text" xml:space="preserve"><value>Исключения сканирования</value></data>
+  <data name="EditExclusionsButton.Content" xml:space="preserve"><value>Изменить</value></data>
+  <data name="DeleteSelectedText.Text" xml:space="preserve"><value>Удалить выбранное</value></data>
+  <data name="ClearText.Text" xml:space="preserve"><value>Очистить</value></data>
+  <data name="PermanentlyDeleteCheckBox.Content" xml:space="preserve"><value>Удалять безвозвратно</value></data>
+  <data name="WarningsInfoBar.Title" xml:space="preserve"><value>Предупреждения</value></data>
+  <data name="ViewErrorsButton.Content" xml:space="preserve"><value>Показать детали</value></data>
+  <data name="SuccessInfoBar.Title" xml:space="preserve"><value>Готово</value></data>
+  <data name="OpenInExplorerMenuItem.Text" xml:space="preserve"><value>Открыть в Проводнике</value></data>
+  <data name="OpenIgnoreFileMenuItem.Text" xml:space="preserve"><value>Открыть файл правила</value></data>
+  <data name="EmptyStateText.Text" xml:space="preserve"><value>Пока ничего не найдено. Выберите папку и запустите сканирование.</value></data>
+  <data name="SettingsButton.Label" xml:space="preserve"><value>Параметры</value></data>
+  <data name="SettingsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Параметры</value></data>
+  <data name="SettingsButtonLabel" xml:space="preserve"><value>Параметры</value></data>
+  <data name="SettingsButtonToolTip" xml:space="preserve"><value>Параметры</value></data>
+  <data name="SettingsTitleText.Text" xml:space="preserve"><value>Параметры</value></data>
+  <data name="DisplayLanguageSettingsCard.Header" xml:space="preserve"><value>Язык интерфейса</value></data>
+  <data name="DisplayLanguageCardHeader" xml:space="preserve"><value>Язык интерфейса</value></data>
+  <data name="LicenseLink.Content" xml:space="preserve"><value>Лицензия MIT</value></data>
+  <data name="RepositoryLink.Content" xml:space="preserve"><value>Поставить звезду</value></data>
+  <data name="ActionScan" xml:space="preserve"><value>Сканировать</value></data>
+  <data name="ActionCancel" xml:space="preserve"><value>Отмена</value></data>
+  <data name="SettingsVersionFormat" xml:space="preserve"><value>Версия {0}</value></data>
+  <data name="SettingsLanguageSystemDefault" xml:space="preserve"><value>Как в системе</value></data>
+  <data name="DialogAppTitle" xml:space="preserve"><value>GitIgnoreCleaner</value></data>
+  <data name="DialogOk" xml:space="preserve"><value>OK</value></data>
+  <data name="DialogCancel" xml:space="preserve"><value>Отмена</value></data>
+  <data name="DialogSave" xml:space="preserve"><value>Сохранить</value></data>
+  <data name="DialogDelete" xml:space="preserve"><value>Удалить</value></data>
+  <data name="DialogMoveToTrash" xml:space="preserve"><value>Переместить в корзину</value></data>
+  <data name="StatusReady" xml:space="preserve"><value>Готово</value></data>
+  <data name="SummaryIdle" xml:space="preserve"><value>Выберите корневую папку и запустите сканирование, чтобы увидеть, что можно очистить.</value></data>
+  <data name="StatusRefreshingProgress" xml:space="preserve"><value>Обновление результатов... обработано {0}</value></data>
+  <data name="SummaryNoMatches" xml:space="preserve"><value>Подходящих ignore-файлов и папок не найдено.</value></data>
+  <data name="SummaryMatches" xml:space="preserve"><value>Найдено {0} совпадений, общий размер {1}.</value></data>
+  <data name="ExclusionsDialogPrompt" xml:space="preserve"><value>Введите имена папок, которые нужно пропускать при сканировании (по одной на строку):</value></data>
+  <data name="ExclusionsDialogTitle" xml:space="preserve"><value>Управление исключениями сканирования</value></data>
+  <data name="StatusCancelingScan" xml:space="preserve"><value>Отмена сканирования...</value></data>
+  <data name="MessageInvalidRootScan" xml:space="preserve"><value>Перед сканированием выберите корректную корневую папку.</value></data>
+  <data name="StatusScanning" xml:space="preserve"><value>Сканирование...</value></data>
+  <data name="StatusScanningProgress" xml:space="preserve"><value>Сканирование... обработано {0}</value></data>
+  <data name="StatusScanCompleted" xml:space="preserve"><value>Сканирование завершено.</value></data>
+  <data name="StatusScanCompletedWithWarnings" xml:space="preserve"><value>Сканирование завершено с предупреждениями.</value></data>
+  <data name="SuccessFoundItems" xml:space="preserve"><value>Найдено {0} совпадений, общий размер {1}.</value></data>
+  <data name="StatusScanCanceled" xml:space="preserve"><value>Сканирование отменено.</value></data>
+  <data name="SummaryScanCanceled" xml:space="preserve"><value>Сканирование отменено до завершения формирования результатов.</value></data>
+  <data name="StatusScanFailed" xml:space="preserve"><value>Сканирование не удалось.</value></data>
+  <data name="MessageInvalidRootDelete" xml:space="preserve"><value>Перед удалением выберите корректную корневую папку.</value></data>
+  <data name="MessageNoItemsSelected" xml:space="preserve"><value>Не выбраны элементы для удаления.</value></data>
+  <data name="ConfirmPermanentDeleteTitle" xml:space="preserve"><value>Подтвердите безвозвратное удаление</value></data>
+  <data name="ConfirmReversibleDeleteTitle" xml:space="preserve"><value>Подтвердите перемещение в корзину</value></data>
+  <data name="ConfirmPermanentDeleteContent" xml:space="preserve"><value>Безвозвратно удалить выбранные пути: {0}; общий размер: {1}? Это действие нельзя отменить.</value></data>
+  <data name="ConfirmReversibleDeleteContent" xml:space="preserve"><value>Переместить выбранные пути ({0}, {1}) в корзину?</value></data>
+  <data name="StatusDeleting" xml:space="preserve"><value>Удаление...</value></data>
+  <data name="StatusDeletingProgress" xml:space="preserve"><value>Удаление... {0}/{1}</value></data>
+  <data name="SummaryDeleteRefreshFailed" xml:space="preserve"><value>Файлы изменены, но обновить текущие результаты не удалось. Запустите сканирование ещё раз.</value></data>
+  <data name="ErrorDeleteRefreshFailed" xml:space="preserve"><value>Удаление завершено, но обновить текущие результаты не удалось: {0}</value></data>
+  <data name="SuccessDeleted" xml:space="preserve"><value>Удалено {0} путей, общий размер {1}.</value></data>
+  <data name="SuccessMovedToTrash" xml:space="preserve"><value>{0} путей перемещено в корзину, общий размер {1}.</value></data>
+  <data name="StatusDeleteFailed" xml:space="preserve"><value>Удаление не удалось.</value></data>
+  <data name="StatusDeleteCompletedWithWarnings" xml:space="preserve"><value>Удаление завершено с предупреждениями.</value></data>
+  <data name="StatusDeleteCompleted" xml:space="preserve"><value>Удаление завершено.</value></data>
+  <data name="ErrorSummaryMore" xml:space="preserve"><value>ещё {0}</value></data>
+  <data name="MessageNoIgnoreFileAssociated" xml:space="preserve"><value>С этим элементом не связан ни один ignore-файл.</value></data>
+  <data name="DialogSelectIgnoreFile" xml:space="preserve"><value>Выберите ignore-файл</value></data>
+  <data name="ErrorOpenFileFailed" xml:space="preserve"><value>Не удалось открыть файл: {0}</value></data>
+  <data name="ErrorOpenLinkFailed" xml:space="preserve"><value>Не удалось открыть ссылку: {0}</value></data>
+  <data name="LanguagePreferenceSaveFailed" xml:space="preserve"><value>Не удалось сохранить языковой параметр: {0}</value></data>
+  <data name="LanguageRestartFailed" xml:space="preserve"><value>Не удалось автоматически перезапустить приложение. Перезапустите его вручную, чтобы применить новый язык интерфейса. ({0})</value></data>
+  <data name="ErrorReadDirectory" xml:space="preserve"><value>Не удалось прочитать {0}: {1}</value></data>
+  <data name="ErrorInspectEntry" xml:space="preserve"><value>Не удалось проверить {0}: {1}</value></data>
+  <data name="ErrorReadIgnoreFile" xml:space="preserve"><value>Не удалось прочитать ignore-файл {0}: {1}</value></data>
+  <data name="ErrorDeletePath" xml:space="preserve"><value>Не удалось удалить {0}: {1}</value></data>
+  <data name="ErrorMoveToRecycleBin" xml:space="preserve"><value>Не удалось переместить {0} в системную Корзину: {1}</value></data>
+  <data name="ErrorMoveToRecycleBinAborted" xml:space="preserve"><value>Операция была отменена или заблокирована Windows.</value></data>
+  <data name="ErrorShellOperationCode" xml:space="preserve"><value>Сбой shell-операции, код</value></data>
+  <data name="ErrorIgnoreFileNoParent" xml:space="preserve"><value>У ignore-файла нет родительской папки.</value></data>
+  <data name="ErrorReadFileSize" xml:space="preserve"><value>Не удалось прочитать размер для {0}: {1}</value></data>
+  <data name="HintContainsMatches" xml:space="preserve"><value>есть совпадения</value></data>
+</root>

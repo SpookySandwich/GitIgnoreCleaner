@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AppDisplayName" xml:space="preserve"><value>GitIgnoreCleaner</value></data>
+  <data name="AppPublisherDisplayName" xml:space="preserve"><value>Charlie Pu</value></data>
+  <data name="AppDescription" xml:space="preserve"><value>ignore ルールに基づいて、プロジェクト内のビルド成果物や一時ファイルをまとめて整理します。</value></data>
+  <data name="MainWindow.Title" xml:space="preserve"><value>GitIgnoreCleaner</value></data>
+  <data name="WarningsPaneTitleText.Text" xml:space="preserve"><value>警告</value></data>
+  <data name="MainDescriptionText.Text" xml:space="preserve"><value>プロジェクト全体で、ignore ルールに一致したビルド成果物や一時ファイルをまとめて整理します。</value></data>
+  <data name="RootFolderTextBox.Header" xml:space="preserve"><value>ルート フォルダー</value></data>
+  <data name="RootFolderTextBox.PlaceholderText" xml:space="preserve"><value>スキャン対象のフォルダーを選択</value></data>
+  <data name="BrowseButton.Content" xml:space="preserve"><value>参照</value></data>
+  <data name="IgnoreFileNamesTextBox.Header" xml:space="preserve"><value>ignore ファイル名</value></data>
+  <data name="IgnoreFileNamesTextBox.Description" xml:space="preserve"><value>セミコロン区切り（例: .gitignore）</value></data>
+  <data name="IgnoreFileNamesTextBox.PlaceholderText" xml:space="preserve"><value>.gitignore;.ignore</value></data>
+  <data name="ScanExclusionsTitleText.Text" xml:space="preserve"><value>スキャン対象から除外</value></data>
+  <data name="EditExclusionsButton.Content" xml:space="preserve"><value>編集</value></data>
+  <data name="DeleteSelectedText.Text" xml:space="preserve"><value>選択項目を削除</value></data>
+  <data name="ClearText.Text" xml:space="preserve"><value>クリア</value></data>
+  <data name="PermanentlyDeleteCheckBox.Content" xml:space="preserve"><value>完全削除</value></data>
+  <data name="WarningsInfoBar.Title" xml:space="preserve"><value>警告</value></data>
+  <data name="ViewErrorsButton.Content" xml:space="preserve"><value>詳細を表示</value></data>
+  <data name="SuccessInfoBar.Title" xml:space="preserve"><value>完了</value></data>
+  <data name="OpenInExplorerMenuItem.Text" xml:space="preserve"><value>エクスプローラーで開く</value></data>
+  <data name="OpenIgnoreFileMenuItem.Text" xml:space="preserve"><value>ルール元のファイルを開く</value></data>
+  <data name="EmptyStateText.Text" xml:space="preserve"><value>表示する項目はありません。フォルダーを選んでスキャンしてください。</value></data>
+  <data name="SettingsButton.Label" xml:space="preserve"><value>設定</value></data>
+  <data name="SettingsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>設定</value></data>
+  <data name="SettingsButtonLabel" xml:space="preserve"><value>設定</value></data>
+  <data name="SettingsButtonToolTip" xml:space="preserve"><value>設定</value></data>
+  <data name="SettingsTitleText.Text" xml:space="preserve"><value>設定</value></data>
+  <data name="DisplayLanguageSettingsCard.Header" xml:space="preserve"><value>表示言語</value></data>
+  <data name="DisplayLanguageCardHeader" xml:space="preserve"><value>表示言語</value></data>
+  <data name="LicenseLink.Content" xml:space="preserve"><value>MIT ライセンス</value></data>
+  <data name="RepositoryLink.Content" xml:space="preserve"><value>リポジトリに Star を付ける</value></data>
+  <data name="ActionScan" xml:space="preserve"><value>スキャン</value></data>
+  <data name="ActionCancel" xml:space="preserve"><value>キャンセル</value></data>
+  <data name="SettingsVersionFormat" xml:space="preserve"><value>バージョン {0}</value></data>
+  <data name="SettingsLanguageSystemDefault" xml:space="preserve"><value>システム設定に合わせる</value></data>
+  <data name="DialogAppTitle" xml:space="preserve"><value>GitIgnoreCleaner</value></data>
+  <data name="DialogOk" xml:space="preserve"><value>OK</value></data>
+  <data name="DialogCancel" xml:space="preserve"><value>キャンセル</value></data>
+  <data name="DialogSave" xml:space="preserve"><value>保存</value></data>
+  <data name="DialogDelete" xml:space="preserve"><value>削除</value></data>
+  <data name="DialogMoveToTrash" xml:space="preserve"><value>ごみ箱へ移動</value></data>
+  <data name="StatusReady" xml:space="preserve"><value>準備完了</value></data>
+  <data name="SummaryIdle" xml:space="preserve"><value>ルート フォルダーを選んでスキャンすると、削除候補を確認できます。</value></data>
+  <data name="StatusRefreshingProgress" xml:space="preserve"><value>結果を更新中... {0} 件処理済み</value></data>
+  <data name="SummaryNoMatches" xml:space="preserve"><value>クリーンアップ対象の ignore ファイルやフォルダーは見つかりませんでした。</value></data>
+  <data name="SummaryMatches" xml:space="preserve"><value>{0} 件の候補が見つかりました（合計 {1}）。</value></data>
+  <data name="ExclusionsDialogPrompt" xml:space="preserve"><value>スキャンから除外するフォルダー名を入力してください（1 行に 1 つ）:</value></data>
+  <data name="ExclusionsDialogTitle" xml:space="preserve"><value>スキャン除外の管理</value></data>
+  <data name="StatusCancelingScan" xml:space="preserve"><value>スキャンを取り消しています...</value></data>
+  <data name="MessageInvalidRootScan" xml:space="preserve"><value>スキャンする前に有効なルート フォルダーを選択してください。</value></data>
+  <data name="StatusScanning" xml:space="preserve"><value>スキャン中...</value></data>
+  <data name="StatusScanningProgress" xml:space="preserve"><value>スキャン中... {0} 件処理済み</value></data>
+  <data name="StatusScanCompleted" xml:space="preserve"><value>スキャンが完了しました。</value></data>
+  <data name="StatusScanCompletedWithWarnings" xml:space="preserve"><value>警告付きでスキャンが完了しました。</value></data>
+  <data name="SuccessFoundItems" xml:space="preserve"><value>{0} 件の候補が見つかりました（合計 {1}）。</value></data>
+  <data name="StatusScanCanceled" xml:space="preserve"><value>スキャンを取り消しました。</value></data>
+  <data name="SummaryScanCanceled" xml:space="preserve"><value>結果の確定前にスキャンが取り消されました。</value></data>
+  <data name="StatusScanFailed" xml:space="preserve"><value>スキャンに失敗しました。</value></data>
+  <data name="MessageInvalidRootDelete" xml:space="preserve"><value>削除する前に有効なルート フォルダーを選択してください。</value></data>
+  <data name="MessageNoItemsSelected" xml:space="preserve"><value>削除する項目が選択されていません。</value></data>
+  <data name="ConfirmPermanentDeleteTitle" xml:space="preserve"><value>完全削除の確認</value></data>
+  <data name="ConfirmReversibleDeleteTitle" xml:space="preserve"><value>ごみ箱へ移動してよろしいですか</value></data>
+  <data name="ConfirmPermanentDeleteContent" xml:space="preserve"><value>選択した {0} 件のパス（合計 {1}）を完全に削除しますか？この操作は元に戻せません。</value></data>
+  <data name="ConfirmReversibleDeleteContent" xml:space="preserve"><value>選択した {0} 件のパス（合計 {1}）をごみ箱へ移動しますか？</value></data>
+  <data name="StatusDeleting" xml:space="preserve"><value>削除中...</value></data>
+  <data name="StatusDeletingProgress" xml:space="preserve"><value>削除中... {0}/{1}</value></data>
+  <data name="SummaryDeleteRefreshFailed" xml:space="preserve"><value>内容は変更されましたが、現在の結果を更新できませんでした。もう一度スキャンしてください。</value></data>
+  <data name="ErrorDeleteRefreshFailed" xml:space="preserve"><value>削除は完了しましたが、現在の結果を更新できませんでした: {0}</value></data>
+  <data name="SuccessDeleted" xml:space="preserve"><value>{0} 件を削除しました（合計 {1}）。</value></data>
+  <data name="SuccessMovedToTrash" xml:space="preserve"><value>{0} 件（合計 {1}）をごみ箱へ移動しました。</value></data>
+  <data name="StatusDeleteFailed" xml:space="preserve"><value>削除に失敗しました。</value></data>
+  <data name="StatusDeleteCompletedWithWarnings" xml:space="preserve"><value>警告付きで削除が完了しました。</value></data>
+  <data name="StatusDeleteCompleted" xml:space="preserve"><value>削除が完了しました。</value></data>
+  <data name="ErrorSummaryMore" xml:space="preserve"><value>ほか {0} 件</value></data>
+  <data name="MessageNoIgnoreFileAssociated" xml:space="preserve"><value>この項目には関連する ignore ファイルがありません。</value></data>
+  <data name="DialogSelectIgnoreFile" xml:space="preserve"><value>Ignore ファイルを選択</value></data>
+  <data name="ErrorOpenFileFailed" xml:space="preserve"><value>ファイルを開けませんでした: {0}</value></data>
+  <data name="ErrorOpenLinkFailed" xml:space="preserve"><value>リンクを開けませんでした: {0}</value></data>
+  <data name="LanguagePreferenceSaveFailed" xml:space="preserve"><value>言語設定を保存できませんでした: {0}</value></data>
+  <data name="LanguageRestartFailed" xml:space="preserve"><value>アプリを自動で再起動できませんでした。新しい表示言語を反映するには、手動で再起動してください。（{0}）</value></data>
+  <data name="ErrorReadDirectory" xml:space="preserve"><value>{0} を読み取れませんでした: {1}</value></data>
+  <data name="ErrorInspectEntry" xml:space="preserve"><value>{0} を確認できませんでした: {1}</value></data>
+  <data name="ErrorReadIgnoreFile" xml:space="preserve"><value>ignore ファイル {0} を読み取れませんでした: {1}</value></data>
+  <data name="ErrorDeletePath" xml:space="preserve"><value>{0} を削除できませんでした: {1}</value></data>
+  <data name="ErrorMoveToRecycleBin" xml:space="preserve"><value>{0} をシステムのごみ箱へ移動できませんでした: {1}</value></data>
+  <data name="ErrorMoveToRecycleBinAborted" xml:space="preserve"><value>操作は Windows によって中止またはブロックされました。</value></data>
+  <data name="ErrorShellOperationCode" xml:space="preserve"><value>Shell 操作が失敗しました。コード:</value></data>
+  <data name="ErrorIgnoreFileNoParent" xml:space="preserve"><value>ignore ファイルに親フォルダーがありません。</value></data>
+  <data name="ErrorReadFileSize" xml:space="preserve"><value>{0} のサイズを読み取れませんでした: {1}</value></data>
+  <data name="HintContainsMatches" xml:space="preserve"><value>一致する項目あり</value></data>
+</root>

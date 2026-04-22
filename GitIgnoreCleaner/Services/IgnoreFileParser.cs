@@ -14,7 +14,7 @@ public static class IgnoreFileParser
             }
         }
 
-        var baseDirectory = Path.GetDirectoryName(filePath) ?? throw new InvalidOperationException("Ignore file has no parent directory.");
+        var baseDirectory = Path.GetDirectoryName(filePath) ?? throw new InvalidOperationException(LocalizationService.GetString("ErrorIgnoreFileNoParent"));
         return new IgnoreRuleLayer(filePath, baseDirectory, rules);
     }
 }

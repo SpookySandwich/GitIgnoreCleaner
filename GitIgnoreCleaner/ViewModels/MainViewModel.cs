@@ -10,31 +10,46 @@ public enum UiOperationKind
 {
     Idle,
     Scanning,
-    Deleting,
-    Restoring
+    Deleting
+}
+
+public enum AppPageKind
+{
+    Main,
+    Settings
 }
 
 public sealed class MainViewModel : INotifyPropertyChanged
 {
+    private const string LegacyManagedTrashFolderName = ".gitignorecleaner-trash";
+
     private string _rootPath = string.Empty;
     private string _ignoreFileNames = ".gitignore;.ignore";
-    private string _excludedFolderNames = $".git;.vs;.idea;.vscode;{ReversibleTrashService.ReservedFolderName};$Recycle.Bin;System Volume Information;Windows;Program Files;Program Files (x86);ProgramData;Recovery;Config.Msi";
+    private string _excludedFolderNames = $".git;.vs;.idea;.vscode;.gitignorecleaner-data;{LegacyManagedTrashFolderName};$Recycle.Bin;System Volume Information;Windows;Program Files;Program Files (x86);ProgramData;Recovery;Config.Msi";
+    private AppPageKind _currentPage = AppPageKind.Main;
     private UiOperationKind _operation = UiOperationKind.Idle;
-    private string _summaryText = "Select a root folder and scan to preview deletions.";
+    private string _summaryText = string.Empty;
     private string _errorSummary = string.Empty;
     private List<string> _errorsList = [];
     private bool _isErrorPaneOpen;
     private bool _permanentlyDelete;
-    private string _statusMessage = "Ready";
+    private string _statusMessage = string.Empty;
     private bool _showSuccessMessage;
     private string _successMessage = string.Empty;
-    private bool _hasRestorableDelete;
-    private bool _showRestoreActionInSuccess;
     private double _progressValue;
     private bool _isProgressIndeterminate;
+    private string _selectedLanguageTag = LocalizationService.GetSavedLanguageSelectionTag();
+    private string _applicationVersionLabel = string.Empty;
 
     public MainViewModel()
     {
+        foreach (var language in LocalizationService.GetAvailableLanguages())
+        {
+            AvailableLanguages.Add(language);
+        }
+
+        ResetIdleText();
+
         Results.CollectionChanged += (_, _) =>
         {
             OnPropertyChanged(nameof(HasResults));
@@ -44,6 +59,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
     }
 
     public ObservableCollection<ScanNode> Results { get; } = [];
+
+    public ObservableCollection<LanguageOption> AvailableLanguages { get; } = [];
 
     public string RootPath
     {
@@ -60,6 +77,27 @@ public sealed class MainViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(CanScanAction));
         }
     }
+
+    public AppPageKind CurrentPage
+    {
+        get => _currentPage;
+        set
+        {
+            if (_currentPage == value)
+            {
+                return;
+            }
+
+            _currentPage = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsMainPageVisible));
+            OnPropertyChanged(nameof(IsSettingsPageVisible));
+        }
+    }
+
+    public bool IsMainPageVisible => CurrentPage == AppPageKind.Main;
+
+    public bool IsSettingsPageVisible => CurrentPage == AppPageKind.Settings;
 
     public string IgnoreFileNames
     {
@@ -106,11 +144,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(IsBusy));
             OnPropertyChanged(nameof(IsScanning));
             OnPropertyChanged(nameof(IsDeleting));
-            OnPropertyChanged(nameof(IsRestoring));
             OnPropertyChanged(nameof(CanScanAction));
             OnPropertyChanged(nameof(CanDelete));
             OnPropertyChanged(nameof(CanClear));
-            OnPropertyChanged(nameof(CanRestoreLastDelete));
         }
     }
 
@@ -119,8 +155,6 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public bool IsScanning => Operation == UiOperationKind.Scanning;
 
     public bool IsDeleting => Operation == UiOperationKind.Deleting;
-
-    public bool IsRestoring => Operation == UiOperationKind.Restoring;
 
     public double ProgressValue
     {
@@ -247,37 +281,6 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
     }
 
-    public bool HasRestorableDelete
-    {
-        get => _hasRestorableDelete;
-        set
-        {
-            if (_hasRestorableDelete == value)
-            {
-                return;
-            }
-
-            _hasRestorableDelete = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(CanRestoreLastDelete));
-        }
-    }
-
-    public bool ShowRestoreActionInSuccess
-    {
-        get => _showRestoreActionInSuccess;
-        set
-        {
-            if (_showRestoreActionInSuccess == value)
-            {
-                return;
-            }
-
-            _showRestoreActionInSuccess = value;
-            OnPropertyChanged();
-        }
-    }
-
     public string StatusMessage
     {
         get => _statusMessage;
@@ -313,11 +316,39 @@ public sealed class MainViewModel : INotifyPropertyChanged
         Directory.Exists(RootPath) &&
         Operation is UiOperationKind.Idle or UiOperationKind.Scanning;
 
+    public string ApplicationVersionLabel
+    {
+        get => _applicationVersionLabel;
+        set
+        {
+            if (_applicationVersionLabel == value)
+            {
+                return;
+            }
+
+            _applicationVersionLabel = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string SelectedLanguageTag
+    {
+        get => _selectedLanguageTag;
+        set
+        {
+            if (_selectedLanguageTag == value)
+            {
+                return;
+            }
+
+            _selectedLanguageTag = value;
+            OnPropertyChanged();
+        }
+    }
+
     public bool CanDelete => Operation == UiOperationKind.Idle && HasResults;
 
     public bool CanClear => Operation == UiOperationKind.Idle && HasResults;
-
-    public bool CanRestoreLastDelete => Operation == UiOperationKind.Idle && HasRestorableDelete;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -334,14 +365,12 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public void ClearResults()
     {
         Results.Clear();
-        SummaryText = "Select a root folder and scan to preview deletions.";
+        ResetIdleText();
         ErrorSummary = string.Empty;
         ErrorsList = [];
         IsErrorPaneOpen = false;
-        StatusMessage = "Ready";
         ShowSuccessMessage = false;
         SuccessMessage = string.Empty;
-        ShowRestoreActionInSuccess = false;
         ProgressValue = 0;
         IsProgressIndeterminate = false;
     }
@@ -354,6 +383,12 @@ public sealed class MainViewModel : INotifyPropertyChanged
             .Where(name => name.Length > 0)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
+    }
+
+    private void ResetIdleText()
+    {
+        SummaryText = LocalizationService.GetString("SummaryIdle");
+        StatusMessage = LocalizationService.GetString("StatusReady");
     }
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)

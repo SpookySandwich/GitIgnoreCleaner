@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AppDisplayName" xml:space="preserve"><value>GitIgnoreCleaner</value></data>
+  <data name="AppPublisherDisplayName" xml:space="preserve"><value>Charlie Pu</value></data>
+  <data name="AppDescription" xml:space="preserve"><value>Clean ignored build artifacts and temporary files across your project tree.</value></data>
+  <data name="MainWindow.Title" xml:space="preserve"><value>GitIgnoreCleaner</value></data>
+  <data name="WarningsPaneTitleText.Text" xml:space="preserve"><value>Warnings</value></data>
+  <data name="MainDescriptionText.Text" xml:space="preserve"><value>Clean ignored build artifacts and temporary files across your project tree.</value></data>
+  <data name="RootFolderTextBox.Header" xml:space="preserve"><value>Root folder</value></data>
+  <data name="RootFolderTextBox.PlaceholderText" xml:space="preserve"><value>Choose a folder to scan</value></data>
+  <data name="BrowseButton.Content" xml:space="preserve"><value>Browse</value></data>
+  <data name="IgnoreFileNamesTextBox.Header" xml:space="preserve"><value>Ignore file names</value></data>
+  <data name="IgnoreFileNamesTextBox.Description" xml:space="preserve"><value>Semicolon-separated list (e.g. .gitignore)</value></data>
+  <data name="IgnoreFileNamesTextBox.PlaceholderText" xml:space="preserve"><value>.gitignore;.ignore</value></data>
+  <data name="ScanExclusionsTitleText.Text" xml:space="preserve"><value>Scan exclusions</value></data>
+  <data name="EditExclusionsButton.Content" xml:space="preserve"><value>Edit</value></data>
+  <data name="DeleteSelectedText.Text" xml:space="preserve"><value>Delete Selected</value></data>
+  <data name="ClearText.Text" xml:space="preserve"><value>Clear</value></data>
+  <data name="PermanentlyDeleteCheckBox.Content" xml:space="preserve"><value>Permanently delete</value></data>
+  <data name="WarningsInfoBar.Title" xml:space="preserve"><value>Warnings</value></data>
+  <data name="ViewErrorsButton.Content" xml:space="preserve"><value>View Details</value></data>
+  <data name="SuccessInfoBar.Title" xml:space="preserve"><value>Completed</value></data>
+  <data name="OpenInExplorerMenuItem.Text" xml:space="preserve"><value>Open in File Explorer</value></data>
+  <data name="OpenIgnoreFileMenuItem.Text" xml:space="preserve"><value>Open Rule Source File</value></data>
+  <data name="EmptyStateText.Text" xml:space="preserve"><value>No items to display. Select a folder and scan.</value></data>
+  <data name="SettingsButton.Label" xml:space="preserve"><value>Settings</value></data>
+  <data name="SettingsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Settings</value></data>
+  <data name="SettingsButtonLabel" xml:space="preserve"><value>Settings</value></data>
+  <data name="SettingsButtonToolTip" xml:space="preserve"><value>Settings</value></data>
+  <data name="SettingsTitleText.Text" xml:space="preserve"><value>Settings</value></data>
+  <data name="DisplayLanguageSettingsCard.Header" xml:space="preserve"><value>Display language</value></data>
+  <data name="DisplayLanguageCardHeader" xml:space="preserve"><value>Display language</value></data>
+  <data name="LicenseLink.Content" xml:space="preserve"><value>MIT license</value></data>
+  <data name="RepositoryLink.Content" xml:space="preserve"><value>Star the repo</value></data>
+  <data name="ActionScan" xml:space="preserve"><value>Scan</value></data>
+  <data name="ActionCancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="SettingsVersionFormat" xml:space="preserve"><value>Version {0}</value></data>
+  <data name="SettingsLanguageSystemDefault" xml:space="preserve"><value>Use system language</value></data>
+  <data name="DialogAppTitle" xml:space="preserve"><value>GitIgnoreCleaner</value></data>
+  <data name="DialogOk" xml:space="preserve"><value>OK</value></data>
+  <data name="DialogCancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="DialogSave" xml:space="preserve"><value>Save</value></data>
+  <data name="DialogDelete" xml:space="preserve"><value>Delete</value></data>
+  <data name="DialogMoveToTrash" xml:space="preserve"><value>Move to Trash</value></data>
+  <data name="StatusReady" xml:space="preserve"><value>Ready</value></data>
+  <data name="SummaryIdle" xml:space="preserve"><value>Select a root folder and scan to preview deletions.</value></data>
+  <data name="StatusRefreshingProgress" xml:space="preserve"><value>Refreshing results... {0} items processed</value></data>
+  <data name="SummaryNoMatches" xml:space="preserve"><value>No ignored files or directories were found.</value></data>
+  <data name="SummaryMatches" xml:space="preserve"><value>{0} path(s) matched, {1} total size.</value></data>
+  <data name="ExclusionsDialogPrompt" xml:space="preserve"><value>Enter folder names to skip during scanning (one per line):</value></data>
+  <data name="ExclusionsDialogTitle" xml:space="preserve"><value>Manage Scan Exclusions</value></data>
+  <data name="StatusCancelingScan" xml:space="preserve"><value>Canceling scan...</value></data>
+  <data name="MessageInvalidRootScan" xml:space="preserve"><value>Select a valid root folder before scanning.</value></data>
+  <data name="StatusScanning" xml:space="preserve"><value>Scanning...</value></data>
+  <data name="StatusScanningProgress" xml:space="preserve"><value>Scanning... {0} items processed</value></data>
+  <data name="StatusScanCompleted" xml:space="preserve"><value>Scan completed.</value></data>
+  <data name="StatusScanCompletedWithWarnings" xml:space="preserve"><value>Scan completed with warnings.</value></data>
+  <data name="SuccessFoundItems" xml:space="preserve"><value>Found {0} path(s) totaling {1}.</value></data>
+  <data name="StatusScanCanceled" xml:space="preserve"><value>Scan canceled.</value></data>
+  <data name="SummaryScanCanceled" xml:space="preserve"><value>Scan canceled before results were finalized.</value></data>
+  <data name="StatusScanFailed" xml:space="preserve"><value>Scan failed.</value></data>
+  <data name="MessageInvalidRootDelete" xml:space="preserve"><value>Select a valid root folder before deleting.</value></data>
+  <data name="MessageNoItemsSelected" xml:space="preserve"><value>No items are selected for deletion.</value></data>
+  <data name="ConfirmPermanentDeleteTitle" xml:space="preserve"><value>Confirm permanent delete</value></data>
+  <data name="ConfirmReversibleDeleteTitle" xml:space="preserve"><value>Confirm move to trash</value></data>
+  <data name="ConfirmPermanentDeleteContent" xml:space="preserve"><value>Delete {0} selected path(s) totaling {1} permanently? This action can't be undone.</value></data>
+  <data name="ConfirmReversibleDeleteContent" xml:space="preserve"><value>Move {0} selected path(s) totaling {1} to trash?</value></data>
+  <data name="StatusDeleting" xml:space="preserve"><value>Deleting...</value></data>
+  <data name="StatusDeletingProgress" xml:space="preserve"><value>Deleting... {0}/{1}</value></data>
+  <data name="SummaryDeleteRefreshFailed" xml:space="preserve"><value>Items changed, but refreshing the current results failed. Run Scan again.</value></data>
+  <data name="ErrorDeleteRefreshFailed" xml:space="preserve"><value>Deleted items, but refreshing the current results failed: {0}</value></data>
+  <data name="SuccessDeleted" xml:space="preserve"><value>Deleted {0} path(s) totaling {1}.</value></data>
+  <data name="SuccessMovedToTrash" xml:space="preserve"><value>Moved {0} path(s) totaling {1} to trash.</value></data>
+  <data name="StatusDeleteFailed" xml:space="preserve"><value>Delete failed.</value></data>
+  <data name="StatusDeleteCompletedWithWarnings" xml:space="preserve"><value>Delete completed with warnings.</value></data>
+  <data name="StatusDeleteCompleted" xml:space="preserve"><value>Delete completed.</value></data>
+  <data name="ErrorSummaryMore" xml:space="preserve"><value>{0} more</value></data>
+  <data name="MessageNoIgnoreFileAssociated" xml:space="preserve"><value>No ignore file associated with this item.</value></data>
+  <data name="DialogSelectIgnoreFile" xml:space="preserve"><value>Select Ignore File</value></data>
+  <data name="ErrorOpenFileFailed" xml:space="preserve"><value>Failed to open file: {0}</value></data>
+  <data name="ErrorOpenLinkFailed" xml:space="preserve"><value>Failed to open link: {0}</value></data>
+  <data name="LanguagePreferenceSaveFailed" xml:space="preserve"><value>Failed to save the language preference: {0}</value></data>
+  <data name="LanguageRestartFailed" xml:space="preserve"><value>Couldn't restart the app automatically. Restart it manually to apply the new display language. ({0})</value></data>
+  <data name="ErrorReadDirectory" xml:space="preserve"><value>Failed to read {0}: {1}</value></data>
+  <data name="ErrorInspectEntry" xml:space="preserve"><value>Failed to inspect {0}: {1}</value></data>
+  <data name="ErrorReadIgnoreFile" xml:space="preserve"><value>Failed to read ignore file {0}: {1}</value></data>
+  <data name="ErrorDeletePath" xml:space="preserve"><value>Failed to delete {0}: {1}</value></data>
+  <data name="ErrorMoveToRecycleBin" xml:space="preserve"><value>Failed to move {0} to the Recycle Bin: {1}</value></data>
+  <data name="ErrorMoveToRecycleBinAborted" xml:space="preserve"><value>The operation was canceled or blocked by Windows.</value></data>
+  <data name="ErrorShellOperationCode" xml:space="preserve"><value>Shell operation failed with code</value></data>
+  <data name="ErrorIgnoreFileNoParent" xml:space="preserve"><value>Ignore file has no parent directory.</value></data>
+  <data name="ErrorReadFileSize" xml:space="preserve"><value>Failed to read size for {0}: {1}</value></data>
+  <data name="HintContainsMatches" xml:space="preserve"><value>contains matches</value></data>
+</root>

@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:GitIgnoreCleaner"
     xmlns:models="using:GitIgnoreCleaner.Models"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     Title="GitIgnoreCleaner">
 
     <Grid Background="Transparent" SizeChanged="RootGrid_SizeChanged">
@@ -14,274 +15,352 @@
         </Grid.RowDefinitions>
 
         <!-- Custom Title Bar -->
-        <Grid x:Name="AppTitleBar" Grid.Row="0" Height="32">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <Image Source="/Assets/WindowIcon.ico" Width="16" Height="16" Margin="16,0,16,0" VerticalAlignment="Center" Visibility="Collapsed" />
-            <TextBlock Text="GitIgnoreCleaner"
-                       Grid.Column="1"
-                       VerticalAlignment="Center"
-                       Style="{ThemeResource CaptionTextBlockStyle}"
-                       Margin="12,0,0,0" />
-        </Grid>
+        <TitleBar x:Name="AppTitleBar"
+                  Grid.Row="0"
+                  Title="GitIgnoreCleaner"
+                  IsBackButtonVisible="{Binding IsSettingsPageVisible}"
+                  IsBackButtonEnabled="{Binding IsSettingsPageVisible}"
+                  BackRequested="AppTitleBar_BackRequested">
+            <TitleBar.IconSource>
+                <BitmapIconSource ShowAsMonochrome="False" UriSource="ms-appx:///Assets/WindowIcon.ico" />
+            </TitleBar.IconSource>
+        </TitleBar>
 
         <!-- Main Area -->
-        <SplitView Grid.Row="1" DisplayMode="Overlay" PanePlacement="Right" OpenPaneLength="500" IsPaneOpen="{Binding IsErrorPaneOpen, Mode=TwoWay}">
-            <SplitView.Pane>
-                <Grid Padding="24" Background="{ThemeResource LayerFillColorDefaultBrush}" BorderBrush="{ThemeResource SurfaceStrokeColorDefaultBrush}" BorderThickness="1,0,0,0">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-                    <Grid Margin="0,0,0,16">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Spacing="4">
-                            <TextBlock Text="Warnings" Style="{ThemeResource SubtitleTextBlockStyle}" />
-                            <TextBlock Text="{Binding ErrorSummary}" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                        </StackPanel>
-                        <Button Grid.Column="1" Click="CloseErrorPane_Click" VerticalAlignment="Top" Background="Transparent" BorderThickness="0">
-                            <SymbolIcon Symbol="Cancel" />
-                        </Button>
-                    </Grid>
-
-                    <ListView Grid.Row="1" ItemsSource="{Binding ErrorsList}" SelectionMode="None">
-                        <ListView.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding}" TextWrapping="Wrap" Margin="0,4" FontFamily="Consolas" FontSize="12" />
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
-                </Grid>
-            </SplitView.Pane>
-            <SplitView.Content>
-                <ScrollViewer x:Name="MainScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <Grid x:Name="MainAreaGrid" MinHeight="400">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition x:Name="MainAreaColumn0" Width="*" />
-                            <ColumnDefinition x:Name="MainAreaColumn1" Width="0" />
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition x:Name="MainAreaRow2" Height="*" />
-                        </Grid.RowDefinitions>
-
-                        <Rectangle Grid.RowSpan="3" Grid.ColumnSpan="2" Width="0" Height="{Binding ElementName=MainScrollViewer, Path=ViewportHeight}" VerticalAlignment="Top" />
-
-                        <!-- Header and Inputs -->
-                        <StackPanel x:Name="HeaderPanel" Grid.Row="0" Padding="24,24,24,12" Spacing="16">
-                            <StackPanel Spacing="4">
-                                <TextBlock Text="GitIgnoreCleaner" Style="{ThemeResource TitleTextBlockStyle}" />
-                                <TextBlock
-                                    Text="Clean build and temp outputs using ignore rules discovered across your tree."
-                                    Style="{ThemeResource BodyTextBlockStyle}"
-                                    TextWrapping="Wrap"
-                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                            </StackPanel>
-
-                            <StackPanel Spacing="16">
-                                <Grid ColumnSpacing="12">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBox
-                                        Header="Root folder"
-                                        Text="{Binding RootPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                        PlaceholderText="Choose a folder to scan"
-                                        IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" />
-                                    <Button
-                                        Grid.Column="1"
-                                        Content="Browse"
-                                        Click="Browse_Click"
-                                        VerticalAlignment="Bottom"
-                                        IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" />
-                                </Grid>
-
-                                <TextBox
-                                    Header="Ignore file names"
-                                    Description="Semicolon-separated list (e.g. .gitignore)"
-                                    Text="{Binding IgnoreFileNames, Mode=TwoWay}"
-                                    PlaceholderText=".gitignore;.ignore"
-                                    IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" />
-
-                                <Border BorderThickness="1" BorderBrush="{ThemeResource SurfaceStrokeColorDefaultBrush}" Background="{ThemeResource LayerFillColorDefaultBrush}" CornerRadius="4">
-                                    <Grid Padding="12">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel VerticalAlignment="Center" Spacing="2">
-                                            <TextBlock Text="Scan exclusions" Style="{ThemeResource BodyTextBlockStyle}" />
-                                            <TextBlock Text="{Binding ExcludedFolderNames}" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="1" />
-                                        </StackPanel>
-                                        <Button Grid.Column="1" Content="Edit" Click="EditExclusions_Click" VerticalAlignment="Center" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" />
-                                    </Grid>
-                                </Border>
-                            </StackPanel>
-
-                            <ProgressBar
-                                Height="4"
-                                Maximum="100"
-                                Margin="0,4,0,0"
-                                Visibility="{Binding IsBusy, Converter={StaticResource InverseBoolToVisibilityConverter}, ConverterParameter=Reverse}"
-                                IsIndeterminate="{Binding IsProgressIndeterminate}"
-                                Value="{Binding ProgressValue}" />
-                        </StackPanel>
-
-                        <!-- Toolbar -->
-                        <Border x:Name="ToolbarPanel" Grid.Row="1" Padding="24,0,24,12" BorderThickness="0" BorderBrush="{ThemeResource SurfaceStrokeColorDefaultBrush}">
-                            <Grid x:Name="ToolbarGrid">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition x:Name="ToolbarRow0" Height="Auto" />
-                                    <RowDefinition x:Name="ToolbarRow1" Height="0" />
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition x:Name="ToolbarCol2" Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <Button x:Name="ScanButton" Click="Scan_Click" IsEnabled="{Binding CanScanAction}" Style="{StaticResource AccentButtonStyle}">
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <SymbolIcon Symbol="{Binding IsScanning, Converter={StaticResource ScanIconConverter}}" />
-                                            <TextBlock Text="{Binding IsScanning, Converter={StaticResource ScanTextConverter}}" />
-                                        </StackPanel>
-                                    </Button>
-
-                                    <Button Click="Delete_Click" IsEnabled="{Binding CanDelete}">
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <SymbolIcon Symbol="Delete" />
-                                            <TextBlock Text="Delete Selected" />
-                                        </StackPanel>
-                                    </Button>
-
-                                    <Button Click="Clear_Click" IsEnabled="{Binding CanClear}">
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <SymbolIcon Symbol="Clear" />
-                                            <TextBlock Text="Clear" />
-                                        </StackPanel>
-                                    </Button>
-                                </StackPanel>
-
-                                <CheckBox x:Name="PermanentlyDeleteCheckBox" Grid.Column="3" Content="Permanently delete" IsChecked="{Binding PermanentlyDelete, Mode=TwoWay}" VerticalAlignment="Center"
-                                          IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" />
-                            </Grid>
-                        </Border>
-
-                        <!-- Content -->
-                        <Grid x:Name="ContentPanel" Grid.Row="2" Padding="24,12">
+        <Grid Grid.Row="1">
+            <Grid Visibility="{Binding IsMainPageVisible, Converter={StaticResource BoolToVisibilityConverter}}">
+                <SplitView DisplayMode="Overlay"
+                           PanePlacement="Right"
+                           OpenPaneLength="500"
+                           IsPaneOpen="{Binding IsErrorPaneOpen, Mode=TwoWay}">
+                    <SplitView.Pane>
+                        <Grid Padding="24" Background="{ThemeResource LayerFillColorDefaultBrush}" BorderBrush="{ThemeResource SurfaceStrokeColorDefaultBrush}" BorderThickness="1,0,0,0">
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
+                            <Grid Margin="0,0,0,16">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Spacing="4">
+                                    <TextBlock x:Name="WarningsPaneTitleText" Text="Warnings" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                                    <TextBlock Text="{Binding ErrorSummary}" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </StackPanel>
+                                <Button Grid.Column="1" Click="CloseErrorPane_Click" VerticalAlignment="Top" Background="Transparent" BorderThickness="0">
+                                    <SymbolIcon Symbol="Cancel" />
+                                </Button>
+                            </Grid>
 
-                            <InfoBar
-                                Grid.Row="0"
-                                Title="Warnings"
-                                Severity="Warning"
-                                IsOpen="{Binding HasErrors}"
-                                Message="{Binding ErrorSummary}"
-                                Margin="0,0,0,12">
-                                <InfoBar.ActionButton>
-                                    <Button Content="View Details" Click="ViewErrors_Click" />
-                                </InfoBar.ActionButton>
-                            </InfoBar>
-
-                            <InfoBar
-                                Grid.Row="1"
-                                Title="Completed"
-                                Severity="Success"
-                                IsOpen="{Binding ShowSuccessMessage, Mode=TwoWay}"
-                                Message="{Binding SuccessMessage}"
-                                Margin="0,0,0,12">
-                                <InfoBar.ActionButton>
-                                    <Button Content="Restore"
-                                            Click="RestoreLastDelete_Click"
-                                            Visibility="{Binding ShowRestoreActionInSuccess, Converter={StaticResource BoolToVisibilityConverter}}"
-                                            IsEnabled="{Binding CanRestoreLastDelete}" />
-                                </InfoBar.ActionButton>
-                            </InfoBar>
-
-                            <Border Grid.Row="2"
-                                    BorderThickness="1"
-                                    BorderBrush="{ThemeResource SurfaceStrokeColorDefaultBrush}"
-                                    Background="{ThemeResource LayerFillColorDefaultBrush}"
-                                    CornerRadius="8"
-                                    MinWidth="350"
-                                    MinHeight="200">
-                                <Grid>
-                                    <TreeView ItemsSource="{Binding Results}" SelectionMode="Single" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Padding="0,12">
-                                        <TreeView.ItemTemplate>
-                                            <DataTemplate x:DataType="models:ScanNode">
-                                                <TreeViewItem ItemsSource="{x:Bind Children}">
-                                                    <TreeViewItem.ContextFlyout>
-                                                        <MenuFlyout>
-                                                            <MenuFlyoutItem Text="Open in File Explorer" Click="OpenInExplorer_Click" Tag="{x:Bind}" Icon="Folder" />
-                                                            <MenuFlyoutItem Text="Open Rule Source File" Click="OpenIgnoreFile_Click" Tag="{x:Bind}" Icon="Document" Visibility="{Binding IsCandidate, Converter={StaticResource InverseBoolToVisibilityConverter}, ConverterParameter=Reverse}" />
-                                                        </MenuFlyout>
-                                                    </TreeViewItem.ContextFlyout>
-                                                    <Grid CornerRadius="4" Padding="4,2">
-                                                        <Grid.Background>
-                                                            <SolidColorBrush Color="Orange" Opacity="{Binding IsCandidate, Converter={StaticResource CandidateToOpacityConverter}}" />
-                                                        </Grid.Background>
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="Auto" />
-                                                            <ColumnDefinition Width="Auto" />
-                                                            <ColumnDefinition Width="*" />
-                                                            <ColumnDefinition Width="Auto" />
-                                                        </Grid.ColumnDefinitions>
-                                                        <CheckBox IsThreeState="True" IsChecked="{x:Bind IsChecked, Mode=TwoWay}" Margin="0,0,8,0" VerticalAlignment="Center" />
-
-                                                        <Grid Grid.Column="1" Margin="0,0,12,0" VerticalAlignment="Center">
-                                                            <SymbolIcon Symbol="{Binding IsDirectory, Converter={StaticResource DirectoryToSymbolConverter}}" 
-                                                                        Foreground="{Binding IsCandidate, Converter={StaticResource CandidateToBrushConverter}}" />
-                                                            <FontIcon Glyph="&#xE74D;" 
-                                                                      FontSize="10" 
-                                                                      Foreground="Red" 
-                                                                      HorizontalAlignment="Right" 
-                                                                      VerticalAlignment="Bottom" 
-                                                                      Margin="0,0,-4,-2"
-                                                                      Visibility="{Binding IsCandidate, Converter={StaticResource BoolToVisibilityConverter}}" />
-                                                        </Grid>
-
-                                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                                            <TextBlock Text="{x:Bind DisplayName}" 
-                                                                       TextTrimming="CharacterEllipsis" 
-                                                                       MaxWidth="400" 
-                                                                       ToolTipService.ToolTip="{x:Bind FullPath}"
-                                                                       FontWeight="{Binding IsCandidate, Converter={StaticResource CandidateToFontWeightConverter}}"
-                                                                       Foreground="{Binding IsCandidate, Converter={StaticResource CandidateToBrushConverter}}" />
-                                                            <TextBlock Text="{x:Bind SizeText}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{ThemeResource CaptionTextBlockStyle}" VerticalAlignment="Center" />
-                                                            <TextBlock Text="{x:Bind HintText}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{ThemeResource CaptionTextBlockStyle}" VerticalAlignment="Center" />
-                                                        </StackPanel>
-                                                    </Grid>
-                                                </TreeViewItem>
-                                            </DataTemplate>
-                                        </TreeView.ItemTemplate>
-                                    </TreeView>
-
-                                    <TextBlock Text="No items to display. Select a folder and scan."
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"
-                                               Style="{ThemeResource SubtitleTextBlockStyle}"
-                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                               Visibility="{Binding HasResults, Converter={StaticResource InverseBoolToVisibilityConverter}}" />
-                                </Grid>
-                            </Border>
+                            <ListView Grid.Row="1" ItemsSource="{Binding ErrorsList}" SelectionMode="None">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" TextWrapping="Wrap" Margin="0,4" FontFamily="Consolas" FontSize="12" />
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
                         </Grid>
-                    </Grid>
-                </ScrollViewer>
-            </SplitView.Content>
-        </SplitView>
+                    </SplitView.Pane>
+                    <SplitView.Content>
+                        <Grid>
+                            <ScrollViewer x:Name="MainScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <Grid x:Name="MainAreaGrid" MinHeight="400">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition x:Name="MainAreaColumn0" Width="*" />
+                                        <ColumnDefinition x:Name="MainAreaColumn1" Width="0" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition x:Name="MainAreaRow2" Height="*" />
+                                    </Grid.RowDefinitions>
+
+                                    <Rectangle Grid.RowSpan="3" Grid.ColumnSpan="2" Width="0" Height="{Binding ElementName=MainScrollViewer, Path=ViewportHeight}" VerticalAlignment="Top" />
+
+                                    <StackPanel x:Name="HeaderPanel" Grid.Row="0" Padding="24,24,24,12" Spacing="16">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock x:Name="MainTitleText" Text="GitIgnoreCleaner" Style="{ThemeResource TitleTextBlockStyle}" />
+                                        </StackPanel>
+
+                                        <StackPanel Spacing="16">
+                                            <Grid ColumnSpacing="12">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBox x:Name="RootFolderTextBox"
+                                                    Header="Root folder"
+                                                    Text="{Binding RootPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                    PlaceholderText="Choose a folder to scan"
+                                                    IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" />
+                                                <Button x:Name="BrowseButton"
+                                                    Grid.Column="1"
+                                                    Content="Browse"
+                                                    Click="Browse_Click"
+                                                    VerticalAlignment="Bottom"
+                                                    IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" />
+                                            </Grid>
+
+                                            <TextBox x:Name="IgnoreFileNamesTextBox"
+                                                Header="Ignore file names"
+                                                Description="Semicolon-separated list (e.g. .gitignore)"
+                                                Text="{Binding IgnoreFileNames, Mode=TwoWay}"
+                                                PlaceholderText=".gitignore;.ignore"
+                                                IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" />
+
+                                            <Border BorderThickness="1" BorderBrush="{ThemeResource SurfaceStrokeColorDefaultBrush}" Background="{ThemeResource LayerFillColorDefaultBrush}" CornerRadius="4">
+                                                <Grid Padding="12">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                                                        <TextBlock x:Name="ScanExclusionsTitleText" Text="Scan exclusions" Style="{ThemeResource BodyTextBlockStyle}" />
+                                                        <TextBlock Text="{Binding ExcludedFolderNames}" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                                                    </StackPanel>
+                                                    <Button x:Name="EditExclusionsButton" Grid.Column="1" Content="Edit" Click="EditExclusions_Click" VerticalAlignment="Center" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" />
+                                                </Grid>
+                                            </Border>
+                                        </StackPanel>
+
+                                        <ProgressBar
+                                            Height="4"
+                                            Maximum="100"
+                                            Margin="0,4,0,0"
+                                            Visibility="{Binding IsBusy, Converter={StaticResource InverseBoolToVisibilityConverter}, ConverterParameter=Reverse}"
+                                            IsIndeterminate="{Binding IsProgressIndeterminate}"
+                                            Value="{Binding ProgressValue}" />
+                                    </StackPanel>
+
+                                    <Border x:Name="ToolbarPanel" Grid.Row="1" Padding="24,0,24,12" BorderThickness="0" BorderBrush="{ThemeResource SurfaceStrokeColorDefaultBrush}">
+                                        <Grid x:Name="ToolbarGrid">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition x:Name="ToolbarRow0" Height="Auto" />
+                                                <RowDefinition x:Name="ToolbarRow1" Height="0" />
+                                            </Grid.RowDefinitions>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition x:Name="ToolbarCol2" Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <Button x:Name="ScanButton" Click="Scan_Click" IsEnabled="{Binding CanScanAction}" Style="{StaticResource AccentButtonStyle}">
+                                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                                        <SymbolIcon Symbol="{Binding IsScanning, Converter={StaticResource ScanIconConverter}}" />
+                                                        <TextBlock Text="{Binding IsScanning, Converter={StaticResource ScanTextConverter}}" />
+                                                    </StackPanel>
+                                                </Button>
+
+                                                <Button Click="Delete_Click" IsEnabled="{Binding CanDelete}">
+                                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                                        <SymbolIcon Symbol="Delete" />
+                                                        <TextBlock x:Name="DeleteSelectedText" Text="Delete Selected" />
+                                                    </StackPanel>
+                                                </Button>
+
+                                                <Button Click="Clear_Click" IsEnabled="{Binding CanClear}">
+                                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                                        <SymbolIcon Symbol="Clear" />
+                                                        <TextBlock x:Name="ClearText" Text="Clear" />
+                                                    </StackPanel>
+                                                </Button>
+                                            </StackPanel>
+
+                                            <CheckBox x:Name="PermanentlyDeleteCheckBox" Grid.Column="3" Content="Permanently delete" IsChecked="{Binding PermanentlyDelete, Mode=TwoWay}" VerticalAlignment="Center"
+                                                      IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" />
+                                        </Grid>
+                                    </Border>
+
+                                    <Grid x:Name="ContentPanel" Grid.Row="2" Padding="24,12">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="*" />
+                                        </Grid.RowDefinitions>
+
+                                        <InfoBar x:Name="WarningsInfoBar"
+                                            Grid.Row="0"
+                                            Title="Warnings"
+                                            Severity="Warning"
+                                            IsOpen="{Binding HasErrors}"
+                                            Message="{Binding ErrorSummary}"
+                                            Margin="0,0,0,12">
+                                            <InfoBar.ActionButton>
+                                                <Button x:Name="ViewErrorsButton" Content="View Details" Click="ViewErrors_Click" />
+                                            </InfoBar.ActionButton>
+                                        </InfoBar>
+
+                                        <InfoBar x:Name="SuccessInfoBar"
+                                            Grid.Row="1"
+                                            Title="Completed"
+                                            Severity="Success"
+                                            IsOpen="{Binding ShowSuccessMessage, Mode=TwoWay}"
+                                            Message="{Binding SuccessMessage}"
+                                            Margin="0,0,0,12" />
+
+                                        <Border Grid.Row="2"
+                                                BorderThickness="1"
+                                                BorderBrush="{ThemeResource SurfaceStrokeColorDefaultBrush}"
+                                                Background="{ThemeResource LayerFillColorDefaultBrush}"
+                                                CornerRadius="8"
+                                                MinWidth="350"
+                                                MinHeight="200">
+                                            <Grid>
+                                                <TreeView ItemsSource="{Binding Results}" SelectionMode="Single" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Padding="0,12">
+                                                    <TreeView.ItemTemplate>
+                                                        <DataTemplate x:DataType="models:ScanNode">
+                                                            <TreeViewItem ItemsSource="{x:Bind Children}">
+                                                                <TreeViewItem.ContextFlyout>
+                                                                    <MenuFlyout>
+                                                                        <MenuFlyoutItem Text="{x:Bind OpenInExplorerText}" Click="OpenInExplorer_Click" Tag="{x:Bind}" Icon="Folder" />
+                                                                        <MenuFlyoutItem Text="{x:Bind OpenIgnoreFileText}" Click="OpenIgnoreFile_Click" Tag="{x:Bind}" Icon="Document" Visibility="{Binding IsCandidate, Converter={StaticResource InverseBoolToVisibilityConverter}, ConverterParameter=Reverse}" />
+                                                                    </MenuFlyout>
+                                                                </TreeViewItem.ContextFlyout>
+                                                                <Grid CornerRadius="4" Padding="4,2">
+                                                                    <Grid.Background>
+                                                                        <SolidColorBrush Color="Orange" Opacity="{Binding IsCandidate, Converter={StaticResource CandidateToOpacityConverter}}" />
+                                                                    </Grid.Background>
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="Auto" />
+                                                                        <ColumnDefinition Width="Auto" />
+                                                                        <ColumnDefinition Width="*" />
+                                                                        <ColumnDefinition Width="Auto" />
+                                                                    </Grid.ColumnDefinitions>
+                                                                    <CheckBox IsThreeState="True" IsChecked="{x:Bind IsChecked, Mode=TwoWay}" Margin="0,0,8,0" VerticalAlignment="Center" />
+
+                                                                    <Grid Grid.Column="1" Margin="0,0,12,0" VerticalAlignment="Center">
+                                                                        <SymbolIcon Symbol="{Binding IsDirectory, Converter={StaticResource DirectoryToSymbolConverter}}"
+                                                                                    Foreground="{Binding IsCandidate, Converter={StaticResource CandidateToBrushConverter}}" />
+                                                                        <FontIcon Glyph="&#xE74D;"
+                                                                                  FontSize="10"
+                                                                                  Foreground="Red"
+                                                                                  HorizontalAlignment="Right"
+                                                                                  VerticalAlignment="Bottom"
+                                                                                  Margin="0,0,-4,-2"
+                                                                                  Visibility="{Binding IsCandidate, Converter={StaticResource BoolToVisibilityConverter}}" />
+                                                                    </Grid>
+
+                                                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                                        <TextBlock Text="{x:Bind DisplayName}"
+                                                                                   TextTrimming="CharacterEllipsis"
+                                                                                   MaxWidth="400"
+                                                                                   ToolTipService.ToolTip="{x:Bind FullPath}"
+                                                                                   FontWeight="{Binding IsCandidate, Converter={StaticResource CandidateToFontWeightConverter}}"
+                                                                                   Foreground="{Binding IsCandidate, Converter={StaticResource CandidateToBrushConverter}}" />
+                                                                        <TextBlock Text="{x:Bind SizeText}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{ThemeResource CaptionTextBlockStyle}" VerticalAlignment="Center" />
+                                                                        <TextBlock Text="{x:Bind HintText}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{ThemeResource CaptionTextBlockStyle}" VerticalAlignment="Center" />
+                                                                    </StackPanel>
+                                                                </Grid>
+                                                            </TreeViewItem>
+                                                        </DataTemplate>
+                                                    </TreeView.ItemTemplate>
+                                                </TreeView>
+
+                                                <TextBlock x:Name="EmptyStateText" Text="No items to display. Select a folder and scan."
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center"
+                                                           Style="{ThemeResource SubtitleTextBlockStyle}"
+                                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                           Visibility="{Binding HasResults, Converter={StaticResource InverseBoolToVisibilityConverter}}" />
+                                            </Grid>
+                                        </Border>
+                                    </Grid>
+                                </Grid>
+                            </ScrollViewer>
+
+                            <CommandBar HorizontalAlignment="Left"
+                                        VerticalAlignment="Bottom"
+                                        Margin="0,0,0,2"
+                                        Padding="0"
+                                        DefaultLabelPosition="Collapsed"
+                                        IsDynamicOverflowEnabled="False"
+                                        Background="Transparent"
+                                        BorderThickness="0">
+                                <AppBarButton x:Name="SettingsButton" Click="OpenSettings_Click"
+                                              Label="Settings"
+                                              Margin="0"
+                                              Padding="8"
+                                              ToolTipService.ToolTip="Settings"
+                                              IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}">
+                                    <AppBarButton.Icon>
+                                        <SymbolIcon Symbol="Setting" />
+                                    </AppBarButton.Icon>
+                                </AppBarButton>
+                            </CommandBar>
+
+                        </Grid>
+                    </SplitView.Content>
+                </SplitView>
+            </Grid>
+
+            <ScrollViewer Visibility="{Binding IsSettingsPageVisible, Converter={StaticResource BoolToVisibilityConverter}}"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <Grid Padding="32,18,32,24">
+                    <StackPanel MaxWidth="680"
+                                HorizontalAlignment="Stretch"
+                                Spacing="20">
+                        <TextBlock x:Name="SettingsTitleText" Text="Settings" Style="{ThemeResource TitleTextBlockStyle}" />
+
+                        <Grid ColumnSpacing="16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <Image Source="/Assets/Square44x44Logo.scale-200.png"
+                                   Width="64"
+                                   Height="64"
+                                   HorizontalAlignment="Left"
+                                   VerticalAlignment="Top" />
+
+                            <StackPanel Grid.Column="1"
+                                        Spacing="4"
+                                        VerticalAlignment="Center">
+                                <TextBlock x:Name="SettingsAppNameText" Text="GitIgnoreCleaner" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                                <TextBlock Text="{Binding ApplicationVersionLabel}"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <TextBlock x:Name="SettingsDescriptionText"
+                                           Text="Clean build and temp outputs using ignore rules discovered across your tree."
+                                           Style="{ThemeResource BodyTextBlockStyle}"
+                                           TextWrapping="Wrap"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Grid>
+
+                        <controls:SettingsCard x:Name="DisplayLanguageSettingsCard" Header="Display language"
+                                               HorizontalAlignment="Stretch">
+                            <controls:SettingsCard.HeaderIcon>
+                                <SymbolIcon Symbol="World" />
+                            </controls:SettingsCard.HeaderIcon>
+                            <ComboBox x:Name="LanguageComboBox"
+                                      MinWidth="260"
+                                      HorizontalAlignment="Stretch"
+                                      ItemsSource="{Binding AvailableLanguages}"
+                                      DisplayMemberPath="DisplayName"
+                                      SelectedValuePath="Tag"
+                                      SelectedValue="{Binding SelectedLanguageTag, Mode=TwoWay}"
+                                      SelectionChanged="LanguageComboBox_SelectionChanged" />
+                        </controls:SettingsCard>
+
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="16">
+                            <HyperlinkButton x:Name="LicenseLink" Content="MIT license"
+                                             Click="OpenLicense_Click"
+                                             HorizontalAlignment="Left" />
+                            <HyperlinkButton x:Name="RepositoryLink" Content="Star the repo"
+                                             Click="OpenRepository_Click"
+                                             HorizontalAlignment="Left" />
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+            </ScrollViewer>
+        </Grid>
 
         <!-- Status Bar -->
         <Border Grid.Row="2" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" Padding="12,6" BorderThickness="0,1,0,0" BorderBrush="{ThemeResource SurfaceStrokeColorDefaultBrush}">

@@ -5,6 +5,7 @@ using System;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI;
 using Microsoft.UI.Text;
+using GitIgnoreCleaner.Services;
 
 namespace GitIgnoreCleaner;
 
@@ -25,7 +26,7 @@ public class ScanTextConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {
-        return (bool)value ? "Cancel" : "Scan";
+        return (bool)value ? LocalizationService.GetString("ActionCancel") : LocalizationService.GetString("ActionScan");
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, string language)

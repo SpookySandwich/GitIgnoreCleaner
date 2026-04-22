@@ -15,6 +15,7 @@ using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using GitIgnoreCleaner.Services;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -34,6 +35,7 @@ namespace GitIgnoreCleaner
         /// </summary>
         public App()
         {
+            LocalizationService.Initialize();
             InitializeComponent();
         }
 

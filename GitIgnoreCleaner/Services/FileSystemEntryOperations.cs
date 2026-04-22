@@ -23,59 +23,9 @@ internal static class FileSystemEntryOperations
         return normalizedCandidate.StartsWith(rootWithSeparator, StringComparison.OrdinalIgnoreCase);
     }
 
-    public static bool PathsShareVolume(string firstPath, string secondPath)
-    {
-        return string.Equals(
-            Path.GetPathRoot(NormalizePath(firstPath)),
-            Path.GetPathRoot(NormalizePath(secondPath)),
-            StringComparison.OrdinalIgnoreCase);
-    }
-
     public static bool PathExists(string fullPath, bool isDirectory)
     {
         return isDirectory ? Directory.Exists(fullPath) : File.Exists(fullPath);
-    }
-
-    public static void EnsureParentDirectory(string fullPath)
-    {
-        var parent = Path.GetDirectoryName(fullPath);
-        if (!string.IsNullOrWhiteSpace(parent))
-        {
-            Directory.CreateDirectory(parent);
-        }
-    }
-
-    public static void MovePath(string sourcePath, string destinationPath, bool isDirectory)
-    {
-        var normalizedSource = NormalizePath(sourcePath);
-        var normalizedDestination = NormalizePath(destinationPath);
-
-        if (!PathExists(normalizedSource, isDirectory))
-        {
-            throw isDirectory
-                ? new DirectoryNotFoundException(normalizedSource)
-                : new FileNotFoundException("The source file doesn't exist.", normalizedSource);
-        }
-
-        if (PathExists(normalizedDestination, isDirectory))
-        {
-            throw new IOException($"The destination already exists: {normalizedDestination}");
-        }
-
-        if (!PathsShareVolume(normalizedSource, normalizedDestination))
-        {
-            throw new IOException("GitIgnoreCleaner only performs reversible moves when the source and trash are on the same volume.");
-        }
-
-        EnsureParentDirectory(normalizedDestination);
-
-        if (isDirectory)
-        {
-            Directory.Move(normalizedSource, normalizedDestination);
-            return;
-        }
-
-        File.Move(normalizedSource, normalizedDestination);
     }
 
     public static long MeasurePathSize(string fullPath, bool isDirectory, IList<string>? errors = null)
@@ -130,7 +80,7 @@ internal static class FileSystemEntryOperations
         }
         catch (Exception ex)
         {
-            errors?.Add($"Failed to inspect {directoryPath}: {ex.Message}");
+            errors?.Add(LocalizationService.Format("ErrorInspectEntry", directoryPath, ex.Message));
             return 0;
         }
 
@@ -141,7 +91,7 @@ internal static class FileSystemEntryOperations
         }
         catch (Exception ex)
         {
-            errors?.Add($"Failed to read {directoryPath}: {ex.Message}");
+            errors?.Add(LocalizationService.Format("ErrorReadDirectory", directoryPath, ex.Message));
             return 0;
         }
 
@@ -155,7 +105,7 @@ internal static class FileSystemEntryOperations
             }
             catch (Exception ex)
             {
-                errors?.Add($"Failed to inspect {entry}: {ex.Message}");
+                errors?.Add(LocalizationService.Format("ErrorInspectEntry", entry, ex.Message));
             }
         }
 
@@ -175,7 +125,7 @@ internal static class FileSystemEntryOperations
         }
         catch (Exception ex)
         {
-            errors?.Add($"Failed to read size for {filePath}: {ex.Message}");
+            errors?.Add(LocalizationService.Format("ErrorReadFileSize", filePath, ex.Message));
             return 0;
         }
     }

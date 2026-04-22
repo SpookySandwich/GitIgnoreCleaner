@@ -222,6 +222,7 @@ rcf/
 # Windows Store app package directories and files
 AppPackages/
 BundleArtifacts/
+.gitignorecleaner-data/
 .gitignorecleaner-trash/
 Package.StoreAssociation.xml
 _pkginfo.txt
